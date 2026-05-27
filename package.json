@@ -1,0 +1,12 @@
+{
+  "name": "blog-to-sns-bridge",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "bridge": "node bridge-server.mjs"
+  },
+  "dependencies": {
+    "marked": "^17.0.4",
+    "playwright": "^1.58.2"
+  }
+}

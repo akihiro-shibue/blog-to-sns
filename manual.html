@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>blog-to-sns セットアップマニュアル</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif;
+      background: #f8f9fc;
+      color: #1a1a2e;
+      line-height: 1.8;
+    }
+
+    header {
+      background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+      color: white;
+      padding: 48px 40px 40px;
+    }
+    header .label { font-size: 12px; letter-spacing: 2px; opacity: 0.85; margin-bottom: 8px; }
+    header h1 { font-size: 30px; font-weight: 700; margin-bottom: 8px; }
+    header p { opacity: 0.9; font-size: 15px; }
+    header .badges { margin-top: 20px; display: flex; gap: 12px; flex-wrap: wrap; }
+    header .badge {
+      background: rgba(255,255,255,0.25);
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 13px;
+    }
+
+    .container { max-width: 860px; margin: 0 auto; padding: 48px 24px; }
+
+    /* 概要 */
+    .overview {
+      background: white;
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 40px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+    .overview h2 { font-size: 18px; margin-bottom: 16px; }
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+    .feature-item {
+      background: #f0fdf8;
+      border-radius: 10px;
+      padding: 16px;
+      text-align: center;
+    }
+    .feature-item .icon { font-size: 28px; margin-bottom: 8px; }
+    .feature-item h3 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+    .feature-item p { font-size: 12px; color: #555; }
+
+    /* ステップ */
+    .section-title {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #11998e;
+      margin-bottom: 20px;
+    }
+
+    .step-block {
+      background: white;
+      border-radius: 14px;
+      padding: 28px 32px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      display: flex;
+      gap: 24px;
+      align-items: flex-start;
+    }
+    .step-num {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #11998e, #38ef7d);
+      color: white;
+      font-weight: 800;
+      font-size: 18px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .step-body { flex: 1; }
+    .step-body h3 { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+    .step-body p { font-size: 14px; color: #444; margin-bottom: 12px; }
+    .step-body p:last-child { margin-bottom: 0; }
+
+    code, .code-block {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 13px;
+    }
+    code {
+      background: #e8f8f5;
+      color: #0e7a6b;
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+    .code-block {
+      background: #1a1a2e;
+      color: #a8ffdf;
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin: 12px 0;
+      overflow-x: auto;
+      line-height: 1.9;
+    }
+    .code-block .comment { color: #5a7a6a; }
+
+    .note-box {
+      background: #fffbeb;
+      border-left: 3px solid #f59e0b;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 13px;
+      color: #555;
+      margin: 12px 0;
+    }
+    .tip-box {
+      background: #f0fdf4;
+      border-left: 3px solid #22c55e;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 13px;
+      color: #444;
+      margin: 12px 0;
+    }
+
+    /* API取得ガイド */
+    .api-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin-top: 8px;
+    }
+    .api-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .api-card .platform {
+      font-size: 13px;
+      font-weight: 700;
+      color: white;
+      border-radius: 6px;
+      padding: 3px 10px;
+      display: inline-block;
+      margin-bottom: 10px;
+    }
+    .api-card.gemini .platform { background: #4285f4; }
+    .api-card.x .platform { background: #1a1a1a; }
+    .api-card.facebook .platform { background: #1877f2; }
+    .api-card.note .platform { background: #41c9b4; }
+    .api-card h3 { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+    .api-card .required {
+      font-size: 11px;
+      font-weight: 700;
+      background: #fde8f0;
+      color: #e91e8c;
+      border-radius: 4px;
+      padding: 2px 6px;
+      margin-left: 6px;
+    }
+    .api-card .optional {
+      font-size: 11px;
+      font-weight: 700;
+      background: #e8f8f5;
+      color: #11998e;
+      border-radius: 4px;
+      padding: 2px 6px;
+      margin-left: 6px;
+    }
+    .api-card ol { padding-left: 18px; font-size: 13px; color: #555; }
+    .api-card ol li { margin-bottom: 4px; }
+    .api-card a { color: #11998e; }
+
+    /* 使い方 */
+    .usage-flow {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .usage-step {
+      background: white;
+      border-radius: 12px;
+      padding: 18px 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      display: flex;
+      gap: 16px;
+      align-items: center;
+    }
+    .usage-step .num {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: #f0fdf8;
+      border: 2px solid #11998e;
+      color: #11998e;
+      font-weight: 700;
+      font-size: 14px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .usage-step h3 { font-size: 15px; font-weight: 700; margin-bottom: 2px; }
+    .usage-step p { font-size: 13px; color: #666; }
+    .arrow-down { text-align: center; color: #ccc; font-size: 20px; }
+
+    /* よくある質問 */
+    .faq-item {
+      background: white;
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .faq-item .q {
+      font-weight: 700;
+      font-size: 15px;
+      margin-bottom: 8px;
+      color: #11998e;
+    }
+    .faq-item .q::before { content: 'Q. '; }
+    .faq-item .a { font-size: 14px; color: #444; }
+    .faq-item .a::before { content: 'A. '; font-weight: 700; color: #333; }
+
+    footer {
+      background: #1a1a2e;
+      color: #888;
+      text-align: center;
+      padding: 32px;
+      font-size: 13px;
+    }
+    footer a { color: #38ef7d; text-decoration: none; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="label">Setup Manual</div>
+  <h1>blog-to-sns セットアップマニュアル</h1>
+  <p>ブログURLを貼るだけで X・Facebook・note に投稿できる環境を作る</p>
+  <div class="badges">
+    <span class="badge">所要時間：約30分</span>
+    <span class="badge">必要スキル：ターミナルの基本操作</span>
+    <span class="badge">費用：Gemini APIのみ（実質無料）</span>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- 概要 -->
+  <div class="overview">
+    <h2>このツールでできること</h2>
+    <div class="feature-grid">
+      <div class="feature-item">
+        <div class="icon">📝</div>
+        <h3>投稿文の自動生成</h3>
+        <p>X・Facebook・note用に文体を自動で変えて生成</p>
+      </div>
+      <div class="feature-item">
+        <div class="icon">🖼️</div>
+        <h3>アイキャッチ画像生成</h3>
+        <p>各SNSの推奨サイズで専用画像を自動生成</p>
+      </div>
+      <div class="feature-item">
+        <div class="icon">🚀</div>
+        <h3>ワンクリック投稿</h3>
+        <p>生成後にボタン1つで各SNSへ自動投稿</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- セットアップ -->
+  <div style="margin-bottom: 40px;">
+    <div class="section-title">Setup Steps</div>
+
+    <!-- Step 1 -->
+    <div class="step-block">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h3>Node.js をインストールする</h3>
+        <p>まだインストールしていない場合は公式サイトからダウンロードします。</p>
+        <div class="tip-box">
+          <a href="https://nodejs.org/ja/" target="_blank">https://nodejs.org/ja/</a> から「LTS版（推奨版）」をダウンロード
+        </div>
+        <p>インストール後、ターミナルで確認：</p>
+        <div class="code-block">node -v<br><span class="comment"># v18.0.0 以上が表示されればOK</span></div>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="step-block">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h3>GitHubからファイルをダウンロードする</h3>
+        <p>ターミナルを開いて以下を実行します。</p>
+        <div class="code-block">git clone https://github.com/akihiroshibue/blog-to-sns.git<br>cd blog-to-sns</div>
+        <div class="note-box">
+          Gitが入っていない場合は <a href="https://git-scm.com/" target="_blank">https://git-scm.com/</a> からインストールしてください。
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="step-block">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h3>必要なパッケージをインストールする</h3>
+        <p><code>blog-to-sns</code> フォルダの中で以下を実行します。</p>
+        <div class="code-block">npm install<br>npx playwright install chromium<br><span class="comment"># chromiumのインストールに1〜2分かかります</span></div>
+      </div>
+    </div>
+
+    <!-- Step 4 -->
+    <div class="step-block">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <h3>ブリッジサーバーを起動する</h3>
+        <p>自動投稿に必要なサーバーを起動します。ターミナルを開いたまま別タブで実行します。</p>
+        <div class="code-block">node bridge-server.mjs<br><span class="comment"># 「Bridge server listening on port 3004」と表示されればOK</span></div>
+        <div class="tip-box">
+          このターミナルは閉じないでください。使い終わったら <code>Ctrl+C</code> で停止できます。
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 5 -->
+    <div class="step-block">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <h3>index.html をブラウザで開く</h3>
+        <p><code>blog-to-sns</code> フォルダ内の <code>index.html</code> をダブルクリックするか、以下で開きます。</p>
+        <div class="code-block">open index.html<span class="comment">  # Mac の場合</span><br>start index.html<span class="comment"> # Windows の場合</span></div>
+      </div>
+    </div>
+
+    <!-- Step 6 -->
+    <div class="step-block">
+      <div class="step-num">6</div>
+      <div class="step-body">
+        <h3>APIキーを設定する</h3>
+        <p>アプリを開いたら「⚙️ 設定」タブから各種キーを入力します。次のセクションで取得方法を説明します。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- APIキー取得 -->
+  <div style="margin-bottom: 40px;">
+    <div class="section-title">API Key Setup</div>
+    <p style="font-size:14px; color:#555; margin-bottom:20px;">設定タブで入力するキーの取得方法です。Gemini APIキーだけあれば投稿文生成はできます。</p>
+    <div class="api-grid">
+
+      <div class="api-card gemini">
+        <span class="platform">Gemini</span>
+        <h3>Gemini API キー <span class="required">必須</span></h3>
+        <ol>
+          <li><a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a> を開く</li>
+          <li>Googleアカウントでログイン</li>
+          <li>「Create API key」をクリック</li>
+          <li>生成されたキーをコピー</li>
+        </ol>
+        <div class="tip-box" style="margin-top:10px; font-size:12px;">無料枠で月数百回は使えます</div>
+      </div>
+
+      <div class="api-card x">
+        <span class="platform">X (Twitter)</span>
+        <h3>X API キー <span class="optional">自動投稿時のみ</span></h3>
+        <ol>
+          <li><a href="https://developer.twitter.com/" target="_blank">X Developer Portal</a> を開く</li>
+          <li>アプリを作成（Basic プランで可）</li>
+          <li>「Keys and Tokens」から4つのキーを取得：<br>API Key / API Secret /<br>Access Token / Access Token Secret</li>
+        </ol>
+      </div>
+
+      <div class="api-card facebook">
+        <span class="platform">Facebook</span>
+        <h3>Facebook アクセストークン <span class="optional">自動投稿時のみ</span></h3>
+        <ol>
+          <li><a href="https://developers.facebook.com/" target="_blank">Meta for Developers</a> を開く</li>
+          <li>アプリを作成</li>
+          <li>Graph API エクスプローラーで<br>ページのアクセストークンを取得</li>
+          <li>ページIDもコピーしておく</li>
+        </ol>
+      </div>
+
+      <div class="api-card note">
+        <span class="platform">note</span>
+        <h3>noteアカウント情報 <span class="optional">自動投稿時のみ</span></h3>
+        <ol>
+          <li>noteのメールアドレスとパスワードをそのまま設定タブに入力</li>
+          <li>Playwrightが自動でログインして下書き保存します</li>
+        </ol>
+        <div class="note-box" style="margin-top:10px; font-size:12px;">パスワードはlocalStorageに保存されます（外部送信なし）</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 使い方 -->
+  <div style="margin-bottom: 40px;">
+    <div class="section-title">How to Use</div>
+    <div class="usage-flow">
+      <div class="usage-step">
+        <div class="num">1</div>
+        <div>
+          <h3>「記事取得」タブでブログのURLを入力</h3>
+          <p>URLを貼り付けるか、テキストを直接入力します</p>
+        </div>
+      </div>
+      <div class="arrow-down">↓</div>
+      <div class="usage-step">
+        <div class="num">2</div>
+        <div>
+          <h3>「生成」タブで「一括生成」ボタンを押す</h3>
+          <p>X・Facebook・note用の投稿文とアイキャッチ画像が30秒で生成されます</p>
+        </div>
+      </div>
+      <div class="arrow-down">↓</div>
+      <div class="usage-step">
+        <div class="num">3</div>
+        <div>
+          <h3>確認・修正する</h3>
+          <p>生成されたテキストは直接編集できます。「再生成」ボタンで何度でも作り直せます</p>
+        </div>
+      </div>
+      <div class="arrow-down">↓</div>
+      <div class="usage-step">
+        <div class="num">4</div>
+        <div>
+          <h3>「投稿」ボタンを押すか、コピーして貼り付ける</h3>
+          <p>APIキーを設定していればワンクリックで投稿。設定していない場合はコピーして各SNSに貼り付けます</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FAQ -->
+  <div style="margin-bottom: 40px;">
+    <div class="section-title">FAQ</div>
+
+    <div class="faq-item">
+      <div class="q">ターミナルを閉じると動かなくなります</div>
+      <div class="a">bridge-server.mjs を起動しているターミナルを閉じると自動投稿ができなくなります。投稿文と画像の生成だけなら問題ありません。常時起動したい場合はlaunchdやpm2での自動起動設定をご検討ください。</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="q">画像が生成されません</div>
+      <div class="a">Gemini APIの画像生成モデルは利用制限があります。設定タブで画像生成をONにした上で、しばらく待ってから再試行してください。</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="q">note投稿が失敗します</div>
+      <div class="a">noteのログイン画面のデザインが変わると動作しなくなることがあります。GitHubの最新版にアップデートしてください（<code>git pull</code>）。</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="q">費用はかかりますか？</div>
+      <div class="a">Gemini APIは無料枠で月数百回の生成ができます。X APIはBasicプラン（月100ドル）が必要です。Facebookとnoteは無料で使えます。投稿文のコピペだけであれば全て無料です。</div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  作者：渋江昭弘 ｜
+  <a href="https://x.com/akihiroshibue" target="_blank">X</a> ｜
+  <a href="https://github.com/akihiroshibue/blog-to-sns" target="_blank">GitHub</a>
+  <br><br>
+  AIを使った売上アップの仕組みを発信しています。<br>
+  LINE公式で無料ファイルを配布中：[リンクを追加]
+</footer>
+
+</body>
+</html>

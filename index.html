@@ -1,0 +1,2240 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ブログ→SNS変換ダッシュボード</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #f0f4ff;
+    --sidebar: #0f1629;
+    --sidebar-hover: #1a2545;
+    --accent: #6366f1;
+    --accent2: #06b6d4;
+    --accent3: #10b981;
+    --facebook: #1877f2;
+    --x-black: #0f1419;
+    --note-red: #e94234;
+    --success: #10b981;
+    --warn: #f59e0b;
+    --danger: #ef4444;
+    --text: #1e293b;
+    --muted: #64748b;
+    --border: #e2e8f0;
+    --white: #ffffff;
+    --card: #ffffff;
+  }
+  body {
+    font-family: 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    min-height: 100vh;
+    font-size: 14px;
+  }
+
+  /* ===== SIDEBAR ===== */
+  .sidebar {
+    width: 230px;
+    min-height: 100vh;
+    background: var(--sidebar);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    position: fixed;
+    top: 0; left: 0;
+    height: 100%;
+    z-index: 100;
+  }
+  .sidebar-logo {
+    padding: 28px 20px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+  }
+  .sidebar-logo .logo-icon { font-size: 28px; margin-bottom: 8px; }
+  .sidebar-logo .logo-main {
+    font-size: 14px;
+    font-weight: 800;
+    color: white;
+    line-height: 1.4;
+  }
+  .sidebar-logo .logo-sub {
+    font-size: 10px;
+    color: rgba(255,255,255,0.35);
+    margin-top: 3px;
+    letter-spacing: 0.04em;
+  }
+  .sidebar-nav { padding: 16px 0; flex: 1; }
+  .nav-section-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.25);
+    letter-spacing: 0.1em;
+    padding: 14px 20px 6px;
+    text-transform: uppercase;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 20px;
+    color: rgba(255,255,255,0.55);
+    cursor: pointer;
+    transition: all 0.15s;
+    font-size: 13px;
+    font-weight: 500;
+    border-left: 3px solid transparent;
+  }
+  .nav-item:hover { background: var(--sidebar-hover); color: rgba(255,255,255,0.9); }
+  .nav-item.active {
+    background: var(--sidebar-hover);
+    color: white;
+    border-left-color: var(--accent);
+  }
+  .nav-item .icon { font-size: 16px; width: 22px; text-align: center; }
+  .nav-badge {
+    margin-left: auto;
+    background: var(--accent);
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 99px;
+  }
+  .nav-badge.green { background: var(--success); }
+  .sidebar-footer {
+    padding: 16px 20px;
+    border-top: 1px solid rgba(255,255,255,0.07);
+  }
+  .sidebar-footer .status-dot {
+    display: inline-block;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--success);
+    margin-right: 6px;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .sidebar-footer span {
+    font-size: 11px;
+    color: rgba(255,255,255,0.35);
+  }
+
+  /* ===== MAIN ===== */
+  .main {
+    margin-left: 230px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+  .topbar {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+  .topbar-title { font-size: 16px; font-weight: 700; color: var(--text); }
+  .topbar-sub { font-size: 12px; color: var(--muted); }
+  .topbar-actions { margin-left: auto; display: flex; gap: 8px; }
+
+  .content { padding: 28px 32px; flex: 1; }
+
+  /* ===== TABS ===== */
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ===== CARDS ===== */
+  .card {
+    background: var(--card);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .card-title { font-size: 15px; font-weight: 700; }
+  .card-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* ===== PLATFORM BADGE ===== */
+  .platform-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 99px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+  }
+  .badge-x { background: #0f1419; color: white; }
+  .badge-fb { background: #e7f0fd; color: var(--facebook); }
+  .badge-note { background: #fff0ef; color: var(--note-red); }
+
+  /* ===== FORM ELEMENTS ===== */
+  .form-group { margin-bottom: 16px; }
+  .form-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 6px;
+    letter-spacing: 0.03em;
+  }
+  .form-input, .form-textarea, .form-select {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--text);
+    background: white;
+    transition: border-color 0.15s;
+    outline: none;
+  }
+  .form-input:focus, .form-textarea:focus, .form-select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+  }
+  .form-textarea { resize: vertical; min-height: 120px; line-height: 1.6; }
+  .form-textarea.large { min-height: 300px; }
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  /* ===== BUTTONS ===== */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+    font-family: inherit;
+    white-space: nowrap;
+  }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-primary {
+    background: var(--accent);
+    color: white;
+  }
+  .btn-primary:hover:not(:disabled) { background: #4f46e5; }
+  .btn-outline {
+    background: transparent;
+    color: var(--accent);
+    border: 1.5px solid var(--accent);
+  }
+  .btn-outline:hover:not(:disabled) { background: rgba(99,102,241,0.06); }
+  .btn-ghost {
+    background: transparent;
+    color: var(--muted);
+    border: 1.5px solid var(--border);
+  }
+  .btn-ghost:hover:not(:disabled) { background: var(--bg); color: var(--text); }
+  .btn-success { background: var(--success); color: white; }
+  .btn-success:hover:not(:disabled) { background: #059669; }
+  .btn-danger { background: var(--danger); color: white; }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+  .btn-lg { padding: 12px 24px; font-size: 14px; }
+  .btn-full { width: 100%; justify-content: center; }
+  .btn-icon { padding: 8px; border-radius: 6px; }
+
+  /* ===== GENERATE BUTTON SPECIAL ===== */
+  .generate-btn-wrapper {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    border-radius: 12px;
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .generate-btn-wrapper .info { color: rgba(255,255,255,0.8); font-size: 13px; }
+  .generate-btn-wrapper .info strong { color: white; display: block; font-size: 15px; margin-bottom: 2px; }
+  .generate-main-btn {
+    background: white;
+    color: var(--accent);
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .generate-main-btn:hover:not(:disabled) {
+    background: rgba(255,255,255,0.92);
+    transform: translateY(-1px);
+  }
+  .generate-main-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  /* ===== POST CARD ===== */
+  .post-card {
+    background: var(--card);
+    border-radius: 12px;
+    border: 1.5px solid var(--border);
+    overflow: hidden;
+    margin-bottom: 20px;
+    transition: border-color 0.2s;
+  }
+  .post-card:hover { border-color: #c7d2fe; }
+  .post-card-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #fafbff;
+  }
+  .post-card-header .platform-icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .icon-x { background: #0f1419; }
+  .icon-fb { background: #1877f2; }
+  .icon-note { background: var(--note-red); }
+  .post-card-header .platform-info { flex: 1; }
+  .post-card-header .platform-name { font-weight: 700; font-size: 14px; }
+  .post-card-header .platform-desc { font-size: 11px; color: var(--muted); margin-top: 1px; }
+  .post-card-header .char-count {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .post-card-header .char-count.warn { color: var(--warn); }
+  .post-card-header .char-count.over { color: var(--danger); }
+  .post-card-body { padding: 16px 20px; }
+  .post-card-footer {
+    padding: 12px 20px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #fafbff;
+  }
+  .post-textarea {
+    width: 100%;
+    border: none;
+    outline: none;
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--text);
+    font-family: inherit;
+    resize: none;
+    background: transparent;
+  }
+  .post-textarea::placeholder { color: #c0c7d0; }
+
+  /* ===== BLOG INFO CARD ===== */
+  .blog-info-card {
+    background: linear-gradient(135deg, #f0f4ff, #e0e7ff);
+    border: 1.5px solid #c7d2fe;
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+    display: none;
+  }
+  .blog-info-card.visible { display: block; }
+  .blog-info-card .blog-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+  .blog-info-card .blog-url {
+    font-size: 12px;
+    color: var(--accent);
+    margin-bottom: 10px;
+    word-break: break-all;
+  }
+  .blog-info-card .blog-stats {
+    display: flex;
+    gap: 16px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .blog-info-card .blog-stats span strong { color: var(--text); }
+
+  /* ===== IMAGE SECTION ===== */
+  .image-preview-area {
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    min-height: 240px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fafbff;
+    overflow: hidden;
+    position: relative;
+  }
+  .image-preview-area img {
+    max-width: 100%;
+    max-height: 400px;
+    border-radius: 8px;
+  }
+  .image-placeholder {
+    text-align: center;
+    color: var(--muted);
+  }
+  .image-placeholder .big-icon { font-size: 48px; margin-bottom: 12px; }
+  .image-placeholder p { font-size: 13px; }
+
+  /* ===== SETTINGS ===== */
+  .settings-section {
+    background: var(--card);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+  .settings-section-header {
+    padding: 16px 24px;
+    background: #fafbff;
+    border-bottom: 1px solid var(--border);
+    font-weight: 700;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .settings-section-body { padding: 20px 24px; }
+  .settings-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .settings-row:last-child { border-bottom: none; }
+  .settings-label { width: 180px; flex-shrink: 0; }
+  .settings-label .label-main { font-size: 13px; font-weight: 600; }
+  .settings-label .label-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .settings-control { flex: 1; }
+
+  /* ===== ALERTS ===== */
+  .alert {
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .alert-info { background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; }
+  .alert-success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
+  .alert-warn { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
+  .alert-error { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+
+  /* ===== LOADING ===== */
+  .spinner {
+    width: 20px; height: 20px;
+    border: 2.5px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    display: inline-block;
+  }
+  .spinner.dark {
+    border-color: rgba(99,102,241,0.2);
+    border-top-color: var(--accent);
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 6px;
+  }
+  @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+  /* ===== GRID ===== */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+
+  /* ===== STEP INDICATOR ===== */
+  .steps {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 28px;
+  }
+  .step {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: white;
+    border: 1.5px solid var(--border);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .step:first-child { border-radius: 8px 0 0 8px; }
+  .step:last-child { border-radius: 0 8px 8px 0; }
+  .step + .step { border-left: none; }
+  .step.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+  .step.done {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+    color: var(--success);
+  }
+  .step-num {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .step.active .step-num { background: rgba(255,255,255,0.25); color: white; }
+  .step.done .step-num { background: var(--success); color: white; }
+
+  /* ===== TONE SELECTOR ===== */
+  .tone-chips {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .tone-chip {
+    padding: 6px 14px;
+    border-radius: 99px;
+    border: 1.5px solid var(--border);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    color: var(--muted);
+    background: white;
+  }
+  .tone-chip:hover { border-color: var(--accent); color: var(--accent); }
+  .tone-chip.selected {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+
+  /* ===== TABS (horizontal) ===== */
+  .htabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 24px;
+  }
+  .htab {
+    padding: 10px 20px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.15s;
+  }
+  .htab:hover { color: var(--text); }
+  .htab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* ===== TOAST ===== */
+  .toast-container {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .toast {
+    padding: 12px 18px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    animation: slideIn 0.3s ease;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    max-width: 320px;
+  }
+  .toast-success { background: var(--success); }
+  .toast-error { background: var(--danger); }
+  .toast-info { background: var(--accent); }
+  @keyframes slideIn { from{transform:translateX(100%);opacity:0} to{transform:translateX(0);opacity:1} }
+
+  /* ===== PROGRESS BAR ===== */
+  .progress-bar-wrap {
+    background: var(--border);
+    border-radius: 99px;
+    height: 6px;
+    overflow: hidden;
+    margin-top: 6px;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 99px;
+    transition: width 0.4s ease;
+  }
+
+  /* ===== TOGGLE SWITCH ===== */
+  .toggle-label { display:flex; align-items:center; gap:8px; cursor:pointer; flex-shrink:0; }
+  .toggle-input { display:none; }
+  .toggle-track {
+    width:44px; height:24px; background:var(--border); border-radius:99px;
+    position:relative; transition:background 0.2s; flex-shrink:0;
+  }
+  .toggle-input:checked + .toggle-track { background:var(--success); }
+  .toggle-thumb {
+    position:absolute; top:3px; left:3px;
+    width:18px; height:18px; border-radius:50%; background:white;
+    transition:transform 0.2s; box-shadow:0 1px 3px rgba(0,0,0,0.2);
+  }
+  .toggle-input:checked + .toggle-track .toggle-thumb { transform:translateX(20px); }
+  .toggle-text { font-size:12px; font-weight:700; color:var(--muted); width:22px; }
+  .toggle-input:checked ~ .toggle-text { color:var(--success); }
+
+  /* ===== GEN STATUS ===== */
+  .gen-status { font-size:11px; font-weight:700; padding:3px 9px; border-radius:99px; }
+  .gen-status.pending { background:#f1f5f9; color:var(--muted); }
+  .gen-status.loading { background:#eff6ff; color:#3b82f6; }
+  .gen-status.done { background:#f0fdf4; color:var(--success); }
+  .gen-status.error { background:#fef2f2; color:var(--danger); }
+
+  /* ===== SKELETON LINES ===== */
+  .skel-lines { padding:4px 0; }
+
+  /* ===== COPY BUTTON ANIMATION ===== */
+  .copied { background: var(--success) !important; color: white !important; border-color: var(--success) !important; }
+
+  /* ===== DIVIDER ===== */
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 20px 0;
+  }
+
+  /* ===== EMPTY STATE ===== */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+  }
+  .empty-state .empty-icon { font-size: 48px; margin-bottom: 16px; }
+  .empty-state h3 { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+  .empty-state p { font-size: 13px; line-height: 1.6; }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 900px) {
+    .sidebar { width: 60px; }
+    .sidebar-logo, .sidebar-footer, .nav-section-label, .nav-item span:not(.icon) { display: none; }
+    .nav-item { justify-content: center; padding: 12px; }
+    .main { margin-left: 60px; }
+    .form-row { grid-template-columns: 1fr; }
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">📡</div>
+    <div class="logo-main">ブログ→SNS<br>変換システム</div>
+    <div class="logo-sub">Blog to SNS Converter</div>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-section-label">ワークフロー</div>
+    <div class="nav-item active" onclick="showTab('tab-blog')" id="nav-blog">
+      <span class="icon">📝</span>
+      <span>① 記事取得</span>
+    </div>
+    <div class="nav-item" onclick="showTab('tab-generate')" id="nav-generate">
+      <span class="icon">✨</span>
+      <span>② 投稿生成</span>
+    </div>
+    <div class="nav-item" id="nav-image" style="display:none"></div>
+    <div class="nav-section-label">管理</div>
+    <div class="nav-item" onclick="showTab('tab-settings')" id="nav-settings">
+      <span class="icon">⚙️</span>
+      <span>設定</span>
+    </div>
+  </div>
+  <div class="sidebar-footer">
+    <span class="status-dot"></span>
+    <span>システム稼働中</span>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title" id="topbar-title">① ブログ記事を取得</div>
+      <div class="topbar-sub" id="topbar-sub">URLを入力するか、本文を直接貼り付けてください</div>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn btn-ghost btn-sm" onclick="showTab('tab-settings')">⚙️ 設定</button>
+      <button class="btn btn-primary btn-sm" onclick="showTab('tab-generate')" id="btn-to-generate" style="display:none">✨ コンテンツ生成へ →</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ========== TAB: BLOG INPUT ========== -->
+    <div class="tab-panel active" id="tab-blog">
+
+      <!-- Step indicator -->
+      <div class="steps">
+        <div class="step active" onclick="showTab('tab-blog')">
+          <div class="step-num">1</div> 記事取得
+        </div>
+        <div class="step" onclick="showTab('tab-generate')" id="step-generate">
+          <div class="step-num">2</div> 生成・確認
+        </div>
+      </div>
+
+      <!-- Blog info (shown after fetch) -->
+      <div class="blog-info-card" id="blog-info-card">
+        <div class="blog-title" id="blog-info-title"></div>
+        <div class="blog-url" id="blog-info-url"></div>
+        <div class="blog-stats">
+          <span>文字数: <strong id="blog-info-chars">-</strong></span>
+          <span>読了時間: <strong id="blog-info-readtime">-</strong></span>
+        </div>
+      </div>
+
+      <!-- ★ BOOKMARKLET (primary) -->
+      <div class="card" style="border-color:#c7d2fe;background:linear-gradient(135deg,#fafbff,#f0f4ff)">
+        <div class="card-header" style="margin-bottom:0">
+          <span style="font-size:22px">🔖</span>
+          <div>
+            <div class="card-title">ブックマークレット（推奨）</div>
+            <div class="card-sub">どんなブログサイトでも確実に取得できます</div>
+          </div>
+          <span style="margin-left:auto;background:var(--accent);color:white;font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px">おすすめ</span>
+        </div>
+
+        <div style="display:flex;gap:16px;margin-top:20px">
+          <!-- Step 1 -->
+          <div style="flex:1;background:white;border-radius:10px;border:1.5px solid var(--border);padding:16px;text-align:center">
+            <div style="width:28px;height:28px;background:var(--accent);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;margin:0 auto 10px">1</div>
+            <div style="font-size:12px;font-weight:700;margin-bottom:8px">下のボタンをブックマークバーへドラッグ</div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:12px">一度だけ追加すればOK</div>
+            <a id="bookmarklet-link" href="#" onclick="return false"
+              style="display:inline-block;background:var(--accent);color:white;padding:9px 16px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;cursor:grab;user-select:none;box-shadow:0 2px 8px rgba(99,102,241,0.3)"
+              draggable="true">
+              📰 ブログ記事を取得
+            </a>
+            <div style="font-size:10px;color:var(--muted);margin-top:8px">← これをドラッグ</div>
+          </div>
+          <!-- Step 2 -->
+          <div style="flex:1;background:white;border-radius:10px;border:1.5px solid var(--border);padding:16px;text-align:center">
+            <div style="width:28px;height:28px;background:var(--accent);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;margin:0 auto 10px">2</div>
+            <div style="font-size:12px;font-weight:700;margin-bottom:8px">ブログ記事のページを開く</div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:12px">取得したい記事ページに移動</div>
+            <div style="font-size:32px">🌐</div>
+          </div>
+          <!-- Step 3 -->
+          <div style="flex:1;background:white;border-radius:10px;border:1.5px solid var(--border);padding:16px;text-align:center">
+            <div style="width:28px;height:28px;background:var(--accent);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;margin:0 auto 10px">3</div>
+            <div style="font-size:12px;font-weight:700;margin-bottom:8px">ブックマークバーのボタンをクリック</div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:12px">記事が自動で読み込まれます</div>
+            <div style="font-size:32px">✅</div>
+          </div>
+        </div>
+
+        <div id="bookmarklet-received" style="display:none;margin-top:16px" class="alert alert-success">
+          ✅ ブックマークレットから記事を受け取りました！下の「生成へ進む」ボタンを押してください。
+        </div>
+      </div>
+
+      <!-- URL fetch (fallback) -->
+      <div class="card">
+        <div class="card-header">
+          <span style="font-size:20px">🔗</span>
+          <div>
+            <div class="card-title">URLから取得（試す）</div>
+            <div class="card-sub">サイトによっては取得できない場合があります</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px">
+          <input type="url" class="form-input" id="blog-url-input"
+            placeholder="https://example.com/blog/article-title"
+            style="flex:1"
+            onkeydown="if(event.key==='Enter')fetchBlog()">
+          <button class="btn btn-primary" onclick="fetchBlog()" id="btn-fetch">
+            <span>取得</span>
+          </button>
+        </div>
+        <div id="fetch-status" style="margin-top:10px;font-size:12px;color:var(--muted)"></div>
+      </div>
+
+      <!-- Manual paste -->
+      <div class="card">
+        <div class="card-header">
+          <span style="font-size:20px">✏️</span>
+          <div>
+            <div class="card-title">手動で貼り付け</div>
+            <div class="card-sub">ブログ本文をコピー&ペーストして使えます</div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">記事タイトル</label>
+          <input type="text" class="form-input" id="manual-title" placeholder="記事のタイトルを入力してください">
+        </div>
+        <div class="form-group">
+          <label class="form-label">記事URL（任意）</label>
+          <input type="url" class="form-input" id="manual-url" placeholder="https://example.com/blog/...">
+        </div>
+        <div class="form-group">
+          <label class="form-label">記事本文</label>
+          <textarea class="form-textarea large" id="manual-content"
+            placeholder="ブログ記事を全選択（Ctrl+A）→コピー（Ctrl+C）→ここに貼り付け（Ctrl+V）"></textarea>
+        </div>
+        <button class="btn btn-outline btn-full" onclick="setManualContent()">
+          ✅ この内容でセット
+        </button>
+      </div>
+
+      <!-- Tone settings (compact) -->
+      <div class="card">
+        <div class="card-header">
+          <span style="font-size:20px">🎨</span>
+          <div>
+            <div class="card-title">投稿スタイル設定</div>
+            <div class="card-sub">コンテンツ生成のトーンを選択してください</div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">文体・トーン</label>
+          <div class="tone-chips" id="tone-chips">
+            <div class="tone-chip selected" data-tone="professional">ビジネス・専門</div>
+            <div class="tone-chip" data-tone="casual">カジュアル</div>
+            <div class="tone-chip" data-tone="friendly">親しみやすい</div>
+            <div class="tone-chip" data-tone="educational">教育・解説</div>
+            <div class="tone-chip" data-tone="enthusiastic">熱量高め</div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">CTA（誘導文）</label>
+            <input type="text" class="form-input" id="cta-text" value="続きはブログで読む →"
+              placeholder="続きはブログで読む →">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">対象業界・ジャンル（任意）</label>
+            <input type="text" class="form-input" id="target-genre" placeholder="例：飲食業、IT、健康・美容">
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;margin-top:8px">
+        <button class="btn btn-primary btn-lg" onclick="proceedToGenerate()" id="btn-proceed">
+          ✨ コンテンツ生成へ進む →
+        </button>
+      </div>
+    </div>
+
+    <!-- ========== TAB: GENERATE ========== -->
+    <div class="tab-panel" id="tab-generate">
+
+      <div class="steps">
+        <div class="step done" onclick="showTab('tab-blog')">
+          <div class="step-num">✓</div> 記事取得
+        </div>
+        <div class="step active">
+          <div class="step-num">2</div> 生成・確認
+        </div>
+      </div>
+
+      <!-- Blog summary -->
+      <div class="blog-info-card visible" id="blog-info-card2" style="display:none">
+        <div class="blog-title" id="blog-info-title2"></div>
+        <div class="blog-url" id="blog-info-url2"></div>
+      </div>
+
+      <!-- Generate button -->
+      <div class="generate-btn-wrapper" id="generate-wrapper">
+        <div class="info">
+          <strong>🤖 AI投稿文を一括生成</strong>
+          X・Facebook・noteの3プラットフォーム分を同時生成します
+        </div>
+        <button class="generate-main-btn" onclick="generateAllContent()" id="btn-gen-all">
+          <span id="btn-gen-icon">✨</span>
+          <span id="btn-gen-text">すべて生成</span>
+        </button>
+      </div>
+
+      <!-- Results: all platforms + eyecatch in one scroll -->
+      <div id="gen-results">
+
+        <!-- X POST -->
+        <div id="card-x" style="display:none">
+          <div class="post-card">
+            <div class="post-card-header">
+              <div class="platform-icon icon-x" style="color:white;font-weight:900;font-size:15px">𝕏</div>
+              <div class="platform-info">
+                <div class="platform-name">X (Twitter) 投稿</div>
+                <div class="platform-desc">280文字以内・ハッシュタグ2-3個・ブログURLつき</div>
+              </div>
+              <div class="gen-status" id="status-x"></div>
+              <div class="char-count" id="x-char-count"></div>
+            </div>
+            <div class="post-card-body">
+              <div id="x-skeleton" class="skel-lines" style="display:none">
+                <div class="skeleton" style="height:16px;margin-bottom:8px;width:90%"></div>
+                <div class="skeleton" style="height:16px;margin-bottom:8px;width:75%"></div>
+                <div class="skeleton" style="height:16px;width:55%"></div>
+              </div>
+              <textarea class="post-textarea" id="x-content" rows="6"
+                placeholder="生成ボタンを押すと自動で作成されます" oninput="updateCharCount('x')"></textarea>
+            </div>
+            <div id="card-img-wrap-x" style="display:none;padding:12px 20px 8px">
+              <img id="card-img-x" src="" alt="X アイキャッチ"
+                style="max-width:100%;max-height:260px;width:auto;border-radius:8px;display:block;object-fit:cover">
+            </div>
+            <div class="post-card-footer">
+              <button class="btn btn-ghost btn-sm" onclick="generateSingle('x')">🔄 再生成</button>
+              <div style="flex:1"></div>
+              <button id="card-img-dl-x" class="btn btn-outline btn-sm" style="display:none"
+                onclick="downloadPlatformImage('x')">⬇️ 画像DL</button>
+              <button class="btn btn-outline btn-sm" onclick="copyContent('x')" id="copy-x">📋 コピー</button>
+              <button class="btn btn-success btn-sm" onclick="publishPlatform('x')" id="post-btn-x">🚀 X投稿</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- FACEBOOK POST -->
+        <div id="card-fb" style="display:none">
+          <div class="post-card">
+            <div class="post-card-header">
+              <div class="platform-icon icon-fb" style="color:white;font-weight:900">f</div>
+              <div class="platform-info">
+                <div class="platform-name">Facebook 投稿</div>
+                <div class="platform-desc">400-600字・感情訴求・ブログへの誘導</div>
+              </div>
+              <div class="gen-status" id="status-fb"></div>
+              <div class="char-count" id="fb-char-count"></div>
+            </div>
+            <div class="post-card-body">
+              <div id="fb-skeleton" class="skel-lines" style="display:none">
+                <div class="skeleton" style="height:16px;margin-bottom:8px;width:95%"></div>
+                <div class="skeleton" style="height:16px;margin-bottom:8px;width:80%"></div>
+                <div class="skeleton" style="height:16px;margin-bottom:8px;width:90%"></div>
+                <div class="skeleton" style="height:16px;width:55%"></div>
+              </div>
+              <textarea class="post-textarea" id="fb-content" rows="10"
+                placeholder="生成ボタンを押すと自動で作成されます" oninput="updateCharCount('fb')"></textarea>
+            </div>
+            <div id="card-img-wrap-fb" style="display:none;padding:12px 20px 8px">
+              <img id="card-img-fb" src="" alt="Facebook アイキャッチ"
+                style="max-width:260px;max-height:260px;border-radius:8px;display:block;object-fit:cover">
+            </div>
+            <div class="post-card-footer">
+              <button class="btn btn-ghost btn-sm" onclick="generateSingle('fb')">🔄 再生成</button>
+              <div style="flex:1"></div>
+              <button id="card-img-dl-fb" class="btn btn-outline btn-sm" style="display:none"
+                onclick="downloadPlatformImage('fb')">⬇️ 画像DL</button>
+              <button class="btn btn-outline btn-sm" onclick="copyContent('fb')" id="copy-fb">📋 コピー</button>
+              <button class="btn btn-success btn-sm" onclick="publishPlatform('fb')" id="post-btn-fb">🚀 FB投稿</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- NOTE POST -->
+        <div id="card-note" style="display:none">
+          <div class="post-card">
+            <div class="post-card-header">
+              <div class="platform-icon icon-note" style="font-size:13px;font-weight:900;color:white">note</div>
+              <div class="platform-info">
+                <div class="platform-name">note 記事</div>
+                <div class="platform-desc">1500-2000字・価値提供→核心は省略→ブログ誘導</div>
+              </div>
+              <div class="gen-status" id="status-note"></div>
+              <div class="char-count" id="note-char-count"></div>
+            </div>
+            <div class="post-card-body">
+              <input type="text" id="note-title-input"
+                style="width:100%;border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-size:14px;font-weight:600;margin-bottom:8px;font-family:inherit"
+                placeholder="note記事タイトル（自動入力）">
+              <div id="note-skeleton" class="skel-lines" style="display:none">
+                <div class="skeleton" style="height:16px;margin-bottom:8px;width:90%"></div>
+                <div class="skeleton" style="height:16px;margin-bottom:8px;width:100%"></div>
+                <div class="skeleton" style="height:16px;margin-bottom:8px;width:85%"></div>
+                <div class="skeleton" style="height:16px;margin-bottom:8px;width:95%"></div>
+                <div class="skeleton" style="height:16px;width:70%"></div>
+              </div>
+              <textarea class="post-textarea" id="note-content" rows="20"
+                placeholder="生成ボタンを押すと自動で作成されます" oninput="updateCharCount('note')"></textarea>
+            </div>
+            <div id="card-img-wrap-note" style="display:none;padding:12px 20px 8px">
+              <img id="card-img-note" src="" alt="note アイキャッチ"
+                style="max-width:100%;max-height:260px;width:auto;border-radius:8px;display:block;object-fit:cover">
+            </div>
+            <div class="post-card-footer">
+              <button class="btn btn-ghost btn-sm" onclick="generateSingle('note')">🔄 再生成</button>
+              <div style="flex:1"></div>
+              <button id="card-img-dl-note" class="btn btn-outline btn-sm" style="display:none"
+                onclick="downloadPlatformImage('note')">⬇️ 画像DL</button>
+              <button class="btn btn-outline btn-sm" onclick="copyContent('note')" id="copy-note">📋 コピー</button>
+              <button class="btn btn-success btn-sm" onclick="publishPlatform('note')" id="post-btn-note">🚀 note投稿</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- EYECATCH -->
+        <div id="card-image" style="display:none">
+          <div class="post-card">
+            <div class="post-card-header">
+              <div class="platform-icon" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);font-size:18px">🖼️</div>
+              <div class="platform-info">
+                <div class="platform-name">アイキャッチ画像</div>
+                <div class="platform-desc">Gemini AIで自動生成</div>
+              </div>
+              <div class="gen-status" id="status-image"></div>
+            </div>
+            <div class="post-card-body">
+              <div id="image-skeleton" class="skel-lines" style="display:none">
+                <div class="skeleton" style="height:200px;border-radius:8px"></div>
+              </div>
+              <div id="image-preview-area" style="display:none">
+                <img id="gen-image-el" src="" alt="アイキャッチ"
+                  style="max-width:100%;border-radius:8px;display:block">
+              </div>
+              <div id="image-empty" style="text-align:center;padding:32px;color:var(--muted);font-size:13px">
+                生成ボタンを押すと自動で作成されます
+              </div>
+            </div>
+            <div class="post-card-footer">
+              <button class="btn btn-ghost btn-sm" onclick="generateImage()">🔄 再生成</button>
+              <div style="flex:1"></div>
+              <button class="btn btn-outline btn-sm" onclick="downloadImage()" id="btn-dl-image" style="display:none">
+                ⬇️ ダウンロード
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty state -->
+        <div id="gen-empty" class="empty-state">
+          <div class="empty-icon">✨</div>
+          <h3>上の「一括生成」ボタンを押してください</h3>
+          <p>設定で有効にしたプラットフォームの投稿文と<br>アイキャッチ画像をまとめて生成します</p>
+        </div>
+
+      </div><!-- /gen-results -->
+
+      <div style="display:flex;justify-content:space-between;margin-top:20px">
+        <button class="btn btn-ghost" onclick="showTab('tab-blog')">← 記事取得に戻る</button>
+        <button class="btn btn-success" onclick="finishWork()" id="btn-finish" style="display:none">
+          🎉 全コンテンツをまとめてコピー
+        </button>
+      </div>
+    </div>
+
+    <!-- ========== TAB: SETTINGS ========== -->
+    <div class="tab-panel" id="tab-settings">
+      <div class="settings-section">
+        <div class="settings-section-header">🔑 API キー設定</div>
+        <div class="settings-section-body">
+          <div class="settings-row">
+            <div class="settings-label">
+              <div class="label-main">Google Gemini API Key</div>
+              <div class="label-sub">コンテンツ生成・画像生成に使用</div>
+            </div>
+            <div class="settings-control">
+              <input type="password" class="form-input" id="s-gemini-key"
+                placeholder="AIza...">
+              <div style="margin-top:6px;font-size:11px;color:var(--muted)">
+                Google AI Studio (aistudio.google.com) で取得できます
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-header">✍️ デフォルト設定</div>
+        <div class="settings-section-body">
+          <div class="settings-row">
+            <div class="settings-label">
+              <div class="label-main">ブランド名</div>
+              <div class="label-sub">コンテンツ末尾に表示</div>
+            </div>
+            <div class="settings-control">
+              <input type="text" class="form-input" id="s-brand-name" placeholder="会社名・ブランド名">
+            </div>
+          </div>
+          <div class="settings-row">
+            <div class="settings-label">
+              <div class="label-main">ウェブサイトURL</div>
+              <div class="label-sub">SNS投稿のデフォルトリンク先</div>
+            </div>
+            <div class="settings-control">
+              <input type="url" class="form-input" id="s-website-url" placeholder="https://example.com">
+            </div>
+          </div>
+          <div class="settings-row">
+            <div class="settings-label">
+              <div class="label-main">デフォルトCTA文言</div>
+              <div class="label-sub">記事への誘導文</div>
+            </div>
+            <div class="settings-control">
+              <input type="text" class="form-input" id="s-cta-default" placeholder="続きはブログで読む →">
+            </div>
+          </div>
+          <div class="settings-row">
+            <div class="settings-label">
+              <div class="label-main">ターゲット業界</div>
+              <div class="label-sub">コンテンツ生成の文脈</div>
+            </div>
+            <div class="settings-control">
+              <input type="text" class="form-input" id="s-industry" placeholder="例：飲食業、IT・SaaS、健康・美容">
+            </div>
+          </div>
+          <div class="settings-row">
+            <div class="settings-label">
+              <div class="label-main">デフォルトハッシュタグ</div>
+              <div class="label-sub">X投稿に毎回追加</div>
+            </div>
+            <div class="settings-control">
+              <input type="text" class="form-input" id="s-hashtags" placeholder="例：#ビジネス #起業 #マーケティング">
+              <div style="margin-top:6px;font-size:11px;color:var(--muted)"># を含めて入力してください</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-header">📱 生成するプラットフォーム</div>
+        <div class="settings-section-body">
+          <p style="font-size:12px;color:var(--muted);margin-bottom:16px">ONにしたプラットフォームの投稿文・アイキャッチを「一括生成」で自動作成します</p>
+          <!-- X -->
+          <div class="settings-row" style="align-items:center">
+            <div class="settings-label">
+              <div class="label-main" style="display:flex;align-items:center;gap:8px">
+                <span style="background:#0f1419;color:white;border-radius:6px;padding:2px 7px;font-size:12px;font-weight:900">𝕏</span>
+                X (Twitter)
+              </div>
+              <div class="label-sub">280文字以内の投稿文</div>
+            </div>
+            <div class="settings-control" style="display:flex;align-items:center;gap:16px">
+              <label class="toggle-label">
+                <input type="checkbox" id="s-enable-x" class="toggle-input" checked>
+                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                <span class="toggle-text" id="toggle-text-x">ON</span>
+              </label>
+              <input type="text" class="form-input" id="s-x-account" placeholder="@アカウント名（メモ用）" style="flex:1">
+            </div>
+          </div>
+          <!-- Facebook -->
+          <div class="settings-row" style="align-items:center">
+            <div class="settings-label">
+              <div class="label-main" style="display:flex;align-items:center;gap:8px">
+                <span style="background:#1877f2;color:white;border-radius:6px;padding:2px 8px;font-size:12px;font-weight:900">f</span>
+                Facebook
+              </div>
+              <div class="label-sub">400-600字の投稿文</div>
+            </div>
+            <div class="settings-control" style="display:flex;align-items:center;gap:16px">
+              <label class="toggle-label">
+                <input type="checkbox" id="s-enable-fb" class="toggle-input" checked>
+                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                <span class="toggle-text" id="toggle-text-fb">ON</span>
+              </label>
+              <input type="text" class="form-input" id="s-fb-page" placeholder="ページ名（メモ用）" style="flex:1">
+            </div>
+          </div>
+          <!-- note -->
+          <div class="settings-row" style="align-items:center">
+            <div class="settings-label">
+              <div class="label-main" style="display:flex;align-items:center;gap:8px">
+                <span style="background:#e94234;color:white;border-radius:6px;padding:2px 6px;font-size:11px;font-weight:900">note</span>
+                note
+              </div>
+              <div class="label-sub">1500-2000字の記事</div>
+            </div>
+            <div class="settings-control" style="display:flex;align-items:center;gap:16px">
+              <label class="toggle-label">
+                <input type="checkbox" id="s-enable-note" class="toggle-input" checked>
+                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                <span class="toggle-text" id="toggle-text-note">ON</span>
+              </label>
+              <input type="text" class="form-input" id="s-note-account" placeholder="noteアカウントID（メモ用）" style="flex:1">
+            </div>
+          </div>
+          <!-- アイキャッチ -->
+          <div class="settings-row" style="align-items:center">
+            <div class="settings-label">
+              <div class="label-main" style="display:flex;align-items:center;gap:8px">
+                <span style="background:linear-gradient(135deg,#6366f1,#8b5cf6);color:white;border-radius:6px;padding:2px 7px;font-size:13px">🖼️</span>
+                アイキャッチ画像
+              </div>
+              <div class="label-sub">Gemini AIで自動生成</div>
+            </div>
+            <div class="settings-control" style="display:flex;align-items:center;gap:16px">
+              <label class="toggle-label">
+                <input type="checkbox" id="s-enable-image" class="toggle-input" checked>
+                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                <span class="toggle-text" id="toggle-text-image">ON</span>
+              </label>
+              <div class="tone-chips" style="flex:1">
+                <div class="tone-chip selected" data-style="modern">モダン</div>
+                <div class="tone-chip" data-style="illustration">イラスト</div>
+                <div class="tone-chip" data-style="photo">写真風</div>
+                <div class="tone-chip" data-style="minimal">ミニマル</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Auto-post credentials -->
+      <div class="settings-section">
+        <div class="settings-section-header">🚀 自動投稿 — 認証情報</div>
+        <div class="settings-section-body">
+          <div class="alert alert-info" style="margin-bottom:16px">
+            bridge-server（ローカル）が起動している必要があります。<br>
+            起動コマンド: <code style="background:#e0e7ff;padding:2px 6px;border-radius:4px">node ~/.secretary/projects/blog-to-sns/bridge-server.mjs</code>
+          </div>
+
+          <!-- X -->
+          <div style="margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--border)">
+            <div style="font-size:13px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px">
+              <span style="background:#0f1419;color:white;border-radius:6px;padding:2px 8px;font-size:12px;font-weight:900">𝕏</span>
+              X (Twitter) API — OAuth 1.0a
+            </div>
+            <div class="form-row">
+              <div class="form-group" style="margin-bottom:10px">
+                <label class="form-label">API Key (Consumer Key)</label>
+                <input type="password" class="form-input" id="s-x-api-key" placeholder="xxxxxxxxxx">
+              </div>
+              <div class="form-group" style="margin-bottom:10px">
+                <label class="form-label">API Secret (Consumer Secret)</label>
+                <input type="password" class="form-input" id="s-x-api-secret" placeholder="xxxxxxxxxx">
+              </div>
+              <div class="form-group" style="margin-bottom:10px">
+                <label class="form-label">Access Token</label>
+                <input type="password" class="form-input" id="s-x-access-token" placeholder="xxxxxxxxxx">
+              </div>
+              <div class="form-group" style="margin-bottom:0">
+                <label class="form-label">Access Token Secret</label>
+                <input type="password" class="form-input" id="s-x-access-secret" placeholder="xxxxxxxxxx">
+              </div>
+            </div>
+          </div>
+
+          <!-- Facebook -->
+          <div style="margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--border)">
+            <div style="font-size:13px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px">
+              <span style="background:#1877f2;color:white;border-radius:6px;padding:2px 9px;font-size:12px;font-weight:900">f</span>
+              Facebook Graph API
+            </div>
+            <div class="form-row">
+              <div class="form-group" style="margin-bottom:0">
+                <label class="form-label">Page ID</label>
+                <input type="text" class="form-input" id="s-fb-page-id" placeholder="123456789012345">
+              </div>
+              <div class="form-group" style="margin-bottom:0">
+                <label class="form-label">Page Access Token</label>
+                <input type="password" class="form-input" id="s-fb-access-token" placeholder="EAAxxxxxxx...">
+              </div>
+            </div>
+          </div>
+
+          <!-- note -->
+          <div>
+            <div style="font-size:13px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px">
+              <span style="background:#e94234;color:white;border-radius:6px;padding:2px 7px;font-size:11px;font-weight:900">note</span>
+              note.com ログイン情報
+            </div>
+            <div class="form-row">
+              <div class="form-group" style="margin-bottom:0">
+                <label class="form-label">メールアドレス</label>
+                <input type="email" class="form-input" id="s-note-email" placeholder="your@email.com">
+              </div>
+              <div class="form-group" style="margin-bottom:0">
+                <label class="form-label">パスワード</label>
+                <input type="password" class="form-input" id="s-note-password" placeholder="パスワード">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <button class="btn btn-ghost btn-sm" onclick="checkBridgeServer()">🔍 bridge-server 接続確認</button>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-ghost" onclick="resetSettings()">リセット</button>
+          <button class="btn btn-primary btn-lg" onclick="saveSettings()">
+            💾 設定を保存
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</main>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+// ==================== STATE ====================
+const state = {
+  blogTitle: '',
+  blogUrl: '',
+  blogContent: '',
+  generated: { x: '', fb: '', note: '' },
+  generatedImage: null,
+  platformImages: { x: null, fb: null, note: null },
+  selectedTone: 'professional',
+  selectedImageStyle: 'modern',
+  selectedAspect: '16:9',
+  isGenerating: false,
+};
+
+// ==================== SETTINGS ====================
+const STORAGE_PREFIX = 'btns_';
+const TEXT_KEYS = ['gemini-key', 'brand-name', 'website-url', 'cta-default',
+  'industry', 'hashtags', 'x-account', 'fb-page', 'note-account',
+  'x-api-key', 'x-api-secret', 'x-access-token', 'x-access-secret',
+  'fb-page-id', 'fb-access-token', 'note-email', 'note-password'];
+const TOGGLE_KEYS = ['enable-x', 'enable-fb', 'enable-note', 'enable-image'];
+
+function loadSettings() {
+  TEXT_KEYS.forEach(k => {
+    const el = document.getElementById('s-' + k);
+    if (el) el.value = localStorage.getItem(STORAGE_PREFIX + k) || '';
+  });
+  // Toggles — default all ON
+  TOGGLE_KEYS.forEach(k => {
+    const el = document.getElementById('s-' + k);
+    if (!el) return;
+    const saved = localStorage.getItem(STORAGE_PREFIX + k);
+    el.checked = saved === null ? true : saved === '1';
+    updateToggleText(k, el.checked);
+  });
+  const cta = localStorage.getItem(STORAGE_PREFIX + 'cta-default') || '続きはブログで読む →';
+  const ctaEl = document.getElementById('cta-text');
+  if (ctaEl && cta) ctaEl.value = cta;
+}
+
+function updateToggleText(key, checked) {
+  const el = document.getElementById('toggle-text-' + key.replace('enable-', ''));
+  if (el) { el.textContent = checked ? 'ON' : 'OFF'; }
+}
+
+function saveSettings() {
+  TEXT_KEYS.forEach(k => {
+    const el = document.getElementById('s-' + k);
+    if (el) localStorage.setItem(STORAGE_PREFIX + k, el.value);
+  });
+  TOGGLE_KEYS.forEach(k => {
+    const el = document.getElementById('s-' + k);
+    if (el) localStorage.setItem(STORAGE_PREFIX + k, el.checked ? '1' : '0');
+  });
+  toast('設定を保存しました', 'success');
+  applyPlatformVisibility();
+}
+
+function resetSettings() {
+  if (!confirm('設定をリセットしてよいですか？')) return;
+  [...TEXT_KEYS, ...TOGGLE_KEYS].forEach(k => {
+    localStorage.removeItem(STORAGE_PREFIX + k);
+    const el = document.getElementById('s-' + k);
+    if (!el) return;
+    if (el.type === 'checkbox') { el.checked = true; updateToggleText(k, true); }
+    else el.value = '';
+  });
+  toast('設定をリセットしました', 'info');
+}
+
+function isEnabled(key) {
+  const saved = localStorage.getItem(STORAGE_PREFIX + 'enable-' + key);
+  return saved === null ? true : saved === '1';
+}
+
+function getSetting(key) {
+  return localStorage.getItem(STORAGE_PREFIX + key) || '';
+}
+
+function getApiKey() {
+  return getSetting('gemini-key');
+}
+
+// ==================== TABS ====================
+const tabConfig = {
+  'tab-blog':     { nav: 'nav-blog',     title: '① ブログ記事を取得', sub: 'URLを入力するか、本文を直接貼り付けてください' },
+  'tab-generate': { nav: 'nav-generate', title: '② 投稿文・アイキャッチを生成', sub: '有効にしたプラットフォームの投稿文とアイキャッチを一括生成します' },
+  'tab-settings': { nav: 'nav-settings', title: '設定', sub: 'APIキー・プラットフォームのON/OFF・CTA文言などを設定します' },
+};
+
+function showTab(tabId) {
+  document.querySelectorAll('.tab-panel').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  document.getElementById(tabId).classList.add('active');
+  const cfg = tabConfig[tabId];
+  if (cfg) {
+    const navEl = document.getElementById(cfg.nav);
+    if (navEl) navEl.classList.add('active');
+    document.getElementById('topbar-title').textContent = cfg.title;
+    document.getElementById('topbar-sub').textContent = cfg.sub;
+  }
+}
+
+// Show/hide platform cards based on settings
+function applyPlatformVisibility() {
+  const map = { x: 'card-x', fb: 'card-fb', note: 'card-note', image: 'card-image' };
+  const anyEnabled = Object.keys(map).some(k => isEnabled(k));
+  document.getElementById('gen-empty').style.display = anyEnabled ? 'none' : 'block';
+  Object.entries(map).forEach(([k, id]) => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = isEnabled(k) ? 'block' : 'none';
+  });
+}
+
+// ==================== BLOG FETCH ====================
+// Strategy 1: Jina Reader — returns clean markdown text directly
+async function fetchViaJina(url) {
+  const r = await fetch(`https://r.jina.ai/${url}`, {
+    headers: { 'Accept': 'text/plain' },
+    signal: AbortSignal.timeout(20000),
+  });
+  if (!r.ok) throw new Error('jina ' + r.status);
+  const text = await r.text();
+  if (text.length < 50) throw new Error('jina empty');
+  return { type: 'text', content: text };
+}
+
+// Strategy 2: CORS proxy → parse HTML
+async function fetchViaProxy(url) {
+  const proxies = [
+    { name: 'corsproxy.io', fn: async (u) => {
+      const r = await fetch(`https://corsproxy.io/?${encodeURIComponent(u)}`, { signal: AbortSignal.timeout(12000) });
+      if (!r.ok) throw new Error(r.status);
+      return r.text();
+    }},
+    { name: 'allorigins', fn: async (u) => {
+      const r = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(u)}`, { signal: AbortSignal.timeout(12000) });
+      if (!r.ok) throw new Error(r.status);
+      const d = await r.json();
+      if (!d.contents) throw new Error('empty');
+      return d.contents;
+    }},
+  ];
+  let lastErr;
+  for (const p of proxies) {
+    try { return { type: 'html', content: await p.fn(url) }; }
+    catch (e) { lastErr = e; }
+  }
+  throw lastErr || new Error('proxy failed');
+}
+
+function extractFromHtml(html) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+
+  const title = (
+    doc.querySelector('meta[property="og:title"]')?.getAttribute('content') ||
+    doc.querySelector('h1')?.textContent ||
+    doc.querySelector('title')?.textContent ||
+    '（タイトル取得失敗）'
+  ).trim().replace(/\s+/g, ' ');
+
+  ['script','style','nav','footer','header','aside','[class*="sidebar"]',
+   '[class*="comment"]','[class*="related"]','[id*="sidebar"]','[id*="footer"]',
+   '.ad','[class*="banner"]','noscript'].forEach(sel => {
+    try { doc.querySelectorAll(sel).forEach(el => el.remove()); } catch {}
+  });
+
+  const articleEl =
+    doc.querySelector('article') ||
+    doc.querySelector('[class*="article-body"]') ||
+    doc.querySelector('[class*="entry-content"]') ||
+    doc.querySelector('[class*="post-content"]') ||
+    doc.querySelector('[class*="blog-content"]') ||
+    doc.querySelector('[itemprop="articleBody"]') ||
+    doc.querySelector('main') ||
+    doc.querySelector('[role="main"]') ||
+    doc.body;
+
+  const rawText = articleEl.innerText || articleEl.textContent || '';
+  const content = rawText.replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+  return { title, content };
+}
+
+// Extract title from Jina markdown (first # heading or first line)
+function extractTitleFromMarkdown(text) {
+  const h1 = text.match(/^#\s+(.+)/m);
+  if (h1) return h1[1].trim();
+  const titleLine = text.match(/^Title:\s*(.+)/m);
+  if (titleLine) return titleLine[1].trim();
+  return text.split('\n').find(l => l.trim().length > 10)?.trim() || '（タイトル取得失敗）';
+}
+
+async function fetchBlog() {
+  const url = document.getElementById('blog-url-input').value.trim();
+  if (!url) { toast('URLを入力してください', 'error'); return; }
+
+  const btn = document.getElementById('btn-fetch');
+  const status = document.getElementById('fetch-status');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>';
+  status.textContent = '取得中... (r.jina.ai)';
+
+  try {
+    let title, content;
+
+    // Try Jina first (most reliable, bypasses anti-scraping)
+    try {
+      const result = await fetchViaJina(url);
+      title = extractTitleFromMarkdown(result.content);
+      content = result.content;
+    } catch (jinaErr) {
+      // Fallback to CORS proxies
+      status.textContent = '取得中... (CORSプロキシ)';
+      const result = await fetchViaProxy(url);
+      const extracted = extractFromHtml(result.content);
+      title = extracted.title;
+      content = extracted.content;
+    }
+
+    if (content.length < 50) throw new Error('コンテンツが短すぎます');
+
+    setBlogData(title, url, content);
+    status.textContent = `✅ 取得成功 — ${content.length.toLocaleString()}文字`;
+    toast(`「${title}」を取得しました`, 'success');
+
+  } catch (err) {
+    console.error('fetchBlog error:', err);
+    status.innerHTML = `<span style="color:var(--danger)">❌ 取得失敗。このサイトはスクレイピングをブロックしています。</span>
+      <div style="margin-top:8px;padding:10px;background:#fff3cd;border-radius:6px;font-size:12px;color:#856404">
+        💡 <strong>対処法：</strong>ブラウザでブログを開き、全文を選択（Ctrl+A）→コピー（Ctrl+C）→下の「手動入力」の本文欄に貼り付けてください
+      </div>`;
+    toast('URL取得に失敗しました', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<span>取得</span>';
+  }
+}
+
+function setManualContent() {
+  const title = document.getElementById('manual-title').value.trim();
+  const url = document.getElementById('manual-url').value.trim();
+  const content = document.getElementById('manual-content').value.trim();
+  if (!title && !content) { toast('タイトルまたは本文を入力してください', 'error'); return; }
+  setBlogData(title || '（タイトル未入力）', url, content);
+  toast('記事内容をセットしました', 'success');
+}
+
+function setBlogData(title, url, content) {
+  state.blogTitle = title;
+  state.blogUrl = url;
+  state.blogContent = content;
+
+  const chars = content.length;
+  const readMin = Math.ceil(chars / 400);
+
+  // Update blog info card (tab 1)
+  const card = document.getElementById('blog-info-card');
+  card.classList.add('visible');
+  document.getElementById('blog-info-title').textContent = title;
+  document.getElementById('blog-info-url').textContent = url;
+  document.getElementById('blog-info-chars').textContent = chars.toLocaleString() + '文字';
+  document.getElementById('blog-info-readtime').textContent = readMin + '分';
+
+  // Update blog info card (tab 2)
+  const card2 = document.getElementById('blog-info-card2');
+  card2.style.display = 'block';
+  document.getElementById('blog-info-title2').textContent = title;
+  document.getElementById('blog-info-url2').textContent = url;
+
+  // Show proceed button
+  document.getElementById('btn-to-generate').style.display = 'flex';
+
+  // Auto-fill image prompt
+  autoFillImagePrompt();
+}
+
+function proceedToGenerate() {
+  if (!state.blogTitle && !state.blogContent) {
+    toast('まず記事を取得または入力してください', 'error');
+    return;
+  }
+  showTab('tab-generate');
+}
+
+// ==================== CHAR COUNT ====================
+function updateCharCount(platform) {
+  const text = document.getElementById(platform + '-content').value;
+  const el = document.getElementById(platform + '-char-count');
+  if (platform === 'x') {
+    const count = text.length;
+    el.textContent = count + ' / 280';
+    el.className = 'char-count' + (count > 280 ? ' over' : count > 250 ? ' warn' : '');
+  } else {
+    el.textContent = text.length.toLocaleString() + '字';
+  }
+}
+
+// ==================== GENERATE CONTENT ====================
+function buildSystemPrompt() {
+  const tone = state.selectedTone;
+  const toneDesc = {
+    professional: 'プロフェッショナルで信頼感のある文体。専門的な言葉を適切に使用し、読者に有益な情報を提供する姿勢で。',
+    casual: '親しみやすいカジュアルな文体。日常会話に近いトーンで、読者との距離感を縮める感じで。',
+    friendly: '温かみのあるフレンドリーな文体。読者に寄り添い、共感を示しながら情報を伝える。',
+    educational: '分かりやすく丁寧な解説スタイル。読者の理解を深めることを最優先に、具体例を交えて説明する。',
+    enthusiastic: '熱量高く情熱的な文体。読者のモチベーションを高め、行動を促すエネルギッシュな表現で。',
+  }[tone] || toneDesc.professional;
+
+  const brand = getSetting('brand-name');
+  const industry = document.getElementById('target-genre')?.value || getSetting('industry');
+  const cta = document.getElementById('cta-text')?.value || getSetting('cta-default') || '続きはブログで読む →';
+  const hashtags = getSetting('hashtags');
+
+  return `あなたはSNSコンテンツ専門のコピーライターです。
+文体: ${toneDesc}
+${brand ? 'ブランド名: ' + brand : ''}
+${industry ? '対象業界/ジャンル: ' + industry : ''}
+CTA文言: 「${cta}」
+${hashtags ? 'デフォルトハッシュタグ: ' + hashtags : ''}
+
+重要ルール:
+- 記事の核心的な答えや解決策は書かない（続きをブログで読ませるため）
+- 読者の興味を引いて「もっと知りたい」と思わせる内容にする
+- 最後に必ずブログURLへの誘導文（CTA）を入れる
+- URLは「{BLOG_URL}」というプレースホルダーを使う`;
+}
+
+async function callGemini(prompt, model = 'gemini-2.0-flash') {
+  const apiKey = getApiKey();
+  if (!apiKey) throw new Error('Gemini API Keyが設定されていません。設定タブで登録してください。');
+
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.8, maxOutputTokens: 4096 },
+      }),
+    }
+  );
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `API error ${res.status}`);
+  }
+  const data = await res.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+}
+
+function setGenStatus(platform, status, label) {
+  const el = document.getElementById('status-' + platform);
+  if (!el) return;
+  el.className = 'gen-status ' + status;
+  el.textContent = label;
+}
+
+async function generateAllContent() {
+  if (!state.blogTitle && !state.blogContent) {
+    toast('先に記事を取得または入力してください', 'error');
+    showTab('tab-blog');
+    return;
+  }
+  if (!getApiKey()) {
+    toast('Gemini API Keyを設定してください', 'error');
+    showTab('tab-settings');
+    return;
+  }
+
+  const btn = document.getElementById('btn-gen-all');
+  btn.disabled = true;
+  document.getElementById('btn-gen-icon').innerHTML = '<span class="spinner" style="border-color:rgba(99,102,241,0.2);border-top-color:var(--accent)"></span>';
+  document.getElementById('btn-gen-text').textContent = '生成中...';
+  document.getElementById('btn-finish').style.display = 'none';
+  document.getElementById('gen-empty').style.display = 'none';
+
+  // Show enabled cards
+  applyPlatformVisibility();
+
+  // Step1: テキストを並列生成
+  const textTasks = [];
+  if (isEnabled('x'))    textTasks.push(generateTextInternal('x'));
+  if (isEnabled('fb'))   textTasks.push(generateTextInternal('fb'));
+  if (isEnabled('note')) textTasks.push(generateTextInternal('note'));
+  await Promise.allSettled(textTasks);
+
+  // Step2: テキスト完了後、各プラットフォームの画像を並列生成
+  if (isEnabled('image')) {
+    const imgTasks = [];
+    if (isEnabled('x'))    imgTasks.push(generateImageForPlatform('x'));
+    if (isEnabled('fb'))   imgTasks.push(generateImageForPlatform('fb'));
+    if (isEnabled('note')) imgTasks.push(generateImageForPlatform('note'));
+    await Promise.allSettled(imgTasks);
+  }
+
+  const total = textTasks.length + (isEnabled('image') ? [isEnabled('x'),isEnabled('fb'),isEnabled('note')].filter(Boolean).length : 0);
+  toast(`${total}件のコンテンツを生成しました`, 'success');
+  document.getElementById('btn-finish').style.display = 'flex';
+  btn.disabled = false;
+  document.getElementById('btn-gen-icon').textContent = '🔄';
+  document.getElementById('btn-gen-text').textContent = '再生成';
+}
+
+async function generateSingle(platform) {
+  if (!state.blogTitle && !state.blogContent) {
+    toast('先に記事を取得または入力してください', 'error');
+    return;
+  }
+  if (!getApiKey()) {
+    toast('Gemini API Keyを設定してください', 'error');
+    showTab('tab-settings');
+    return;
+  }
+  try {
+    if (platform === 'image') {
+      // 各プラットフォームの画像を再生成
+      const ps = ['x','fb','note'].filter(p => isEnabled(p) && state.generated[p]);
+      if (ps.length === 0) { toast('先にテキストを生成してください', 'error'); return; }
+      await Promise.allSettled(ps.map(p => generateImageForPlatform(p)));
+      toast('画像を再生成しました', 'success');
+    } else {
+      await generateTextInternal(platform);
+      if (isEnabled('image')) await generateImageForPlatform(platform);
+      toast(platformName(platform) + ' を再生成しました', 'success');
+    }
+  } catch (err) {
+    toast('生成に失敗しました: ' + err.message, 'error');
+  }
+}
+
+async function generateTextInternal(platform) {
+  const skel = document.getElementById(platform + '-skeleton');
+  const contentEl = document.getElementById(platform + '-content');
+
+  setGenStatus(platform, 'loading', '生成中...');
+  skel.style.display = 'block';
+  contentEl.style.display = 'none';
+  contentEl.value = '';
+
+  try {
+    const excerpt = state.blogContent.slice(0, 2000);
+    const url = state.blogUrl || getSetting('website-url') || '{{記事URL}}';
+    const result = await callGemini(buildPrompt(platform, excerpt, url, buildSystemPrompt()));
+    let processed = result.replace(/\{BLOG_URL\}/g, url).trim();
+    // 前置き挨拶行を除去（「はい」「承知」「以下に」等で始まる行）
+    processed = processed.replace(/^[\s\S]*?(?:はい[、。,.]|承知[いし]|以下[にはの]|かしこまり|ご要望)[^\n]*\n+/i, '').trim();
+    contentEl.value = processed;
+    state.generated[platform] = processed;
+    // noteカードのタイトル欄を自動セット
+    if (platform === 'note') {
+      const noteTitleEl = document.getElementById('note-title-input');
+      if (noteTitleEl && !noteTitleEl.value) noteTitleEl.value = state.blogTitle || '';
+    }
+    updateCharCount(platform);
+    setGenStatus(platform, 'done', '✓ 完了');
+  } catch (err) {
+    setGenStatus(platform, 'error', '✗ エラー');
+    throw err;
+  } finally {
+    skel.style.display = 'none';
+    contentEl.style.display = 'block';
+  }
+}
+
+// 投稿内容からインフォグラフィック用プロンプトを生成
+async function buildImagePromptForPlatform(platform) {
+  const postText = state.generated[platform] || '';
+  const title = state.blogTitle || 'ブログ記事';
+  const excerpt = postText.slice(0, 400);
+
+  const aspectLabel = platform === 'fb' ? '正方形1:1' : '横長16:9';
+  const platformLabel = { x: 'X(Twitter)', fb: 'Facebook', note: 'note' }[platform] || platform;
+
+  const metaPrompt = `以下の${platformLabel}投稿文をもとに、SNS解説インフォグラフィック画像のプロンプトを作成してください。
+
+投稿文（抜粋）:
+${excerpt}
+
+記事タイトル: ${title}
+
+プロンプトの条件:
+- 日本語マンガ風・わかりやすい解説イラスト
+- 白背景、オレンジ(#F5A623)・青(#3B82F6)・グリーン(#22C55E)のアクセントカラー
+- 親しみやすいキャラクターイラスト（吹き出し付き）を1〜2名配置
+- 投稿の主要ポイントを①②③のステップや丸囲み番号で視覚化
+- ステップ間を矢印でつなぐフロー構成
+- 文字はすべて日本語・太字・読みやすいフォント
+- 縦横比: ${aspectLabel}・余白多め
+- タイトルを画像上部に大きく配置
+
+画像プロンプトの本文のみ（前置き説明なし）を出力してください。日本語で記述してください。`;
+
+  return await callGemini(metaPrompt, 'gemini-2.0-flash');
+}
+
+// プラットフォーム別画像生成（カードのアイキャッチ枠を個別に更新）
+async function generateImageForPlatform(platform) {
+  const apiKey = getApiKey();
+  if (!apiKey) throw new Error('Gemini API Key未設定');
+
+  // カードのアイキャッチ枠のIDはplat毎に用意
+  const cardImgId = `card-img-${platform}`;
+  const cardImgEl = document.getElementById(cardImgId);
+
+  setGenStatus('image', 'loading', `画像生成中...`);
+
+  try {
+    // Step1: 投稿内容に合ったプロンプトを生成
+    const imagePrompt = await buildImagePromptForPlatform(platform);
+
+    // Step2: 画像生成
+    const aspectRatio = platform === 'fb' ? '1:1' : '16:9'; // X/note: 16:9, FB: 1:1
+    const models = ['gemini-3.1-flash-image-preview', 'gemini-2.5-flash-image'];
+    let dataUrl = null;
+    let lastErr;
+
+    for (const model of models) {
+      try {
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: imagePrompt }] }],
+              generationConfig: {
+                responseModalities: ['TEXT', 'IMAGE'],
+                imageConfig: { aspectRatio },
+              },
+            }),
+          }
+        );
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          lastErr = new Error(errData.error?.message || `API Error ${res.status}`);
+          continue;
+        }
+        const data = await res.json();
+        const imgPart = data.candidates?.[0]?.content?.parts?.find(p => p.inlineData?.data);
+        if (!imgPart) { lastErr = new Error('画像が返ってきませんでした'); continue; }
+        dataUrl = `data:${imgPart.inlineData.mimeType};base64,${imgPart.inlineData.data}`;
+        break;
+      } catch (e) { lastErr = e; }
+    }
+
+    if (!dataUrl) throw lastErr || new Error('画像生成失敗');
+
+    // 保存 & カード内に表示
+    state.platformImages[platform] = dataUrl;
+    state.generatedImage = dataUrl; // 最後に生成したものをデフォルト画像にも設定
+
+    if (cardImgEl) {
+      cardImgEl.src = dataUrl;
+      cardImgEl.style.display = 'block';
+      document.getElementById(`card-img-wrap-${platform}`)?.style?.setProperty('display', 'block');
+      document.getElementById(`card-img-dl-${platform}`)?.style?.setProperty('display', 'inline-flex');
+    }
+
+    setGenStatus('image', 'done', '✓ 完了');
+  } catch (err) {
+    setGenStatus('image', 'error', '✗ 画像エラー');
+    throw err;
+  }
+}
+
+// generateImage: 旧シングル生成（再生成ボタン用ラッパー）
+async function generateImage() {
+  if (!getApiKey()) { toast('Gemini API Keyを設定してください', 'error'); showTab('tab-settings'); return; }
+  const ps = ['x','fb','note'].filter(p => isEnabled(p) && state.generated[p]);
+  if (ps.length === 0) { toast('先にテキストを生成してください', 'error'); return; }
+  try {
+    await Promise.allSettled(ps.map(p => generateImageForPlatform(p)));
+    toast('画像を再生成しました', 'success');
+  } catch (err) {
+    toast('画像生成に失敗: ' + err.message, 'error');
+  }
+}
+
+function buildPrompt(platform, excerpt, url, system) {
+  const title = state.blogTitle;
+  const cta = document.getElementById('cta-text')?.value || '続きはブログで読む →';
+
+  const prompts = {
+    x: `${system}
+
+以下のブログ記事をもとに、X(Twitter)投稿文を作成してください。
+
+記事タイトル: 「${title}」
+記事URL: ${url}
+記事の内容（抜粋）:
+${excerpt}
+
+要件:
+- 全体で280文字以内（URLを含む）
+- 記事の最も興味深いポイント1つを冒頭で提示
+- 答えや解決策は書かず「続きを読みたい」と思わせる
+- CTA「${cta}」を自然な形で入れる
+- 最後の行にURLを単独で配置: ${url}
+- ハッシュタグは2〜3個（末尾）
+- 絵文字は1〜3個まで
+
+URLは本文字数にカウントせず最後の1行として配置してください。`,
+
+    fb: `${system}
+
+以下のブログ記事をもとに、Facebook投稿文を作成してください。
+
+記事タイトル: 「${title}」
+記事URL: ${url}
+記事の内容（抜粋）:
+${excerpt}
+
+要件:
+- 400〜600文字程度
+- 共感・問いかけで始まる導入部（2〜3行）
+- 記事の価値ある部分を少し紹介するが核心は書かない
+- 「〜なんです。でも、なぜそうなのか？その理由と具体的な方法は…」のように途中で止める
+- CTA「${cta}」でブログへ誘導
+- 最後にURL: {BLOG_URL}
+- 絵文字を効果的に使用（4〜6個）
+- ハッシュタグは不要（Facebookは不要）`,
+
+    note: `${system}
+
+以下のブログ記事をもとに、noteの記事を作成してください。
+
+記事タイトル: 「${title}」
+記事URL: ${url}
+元記事の内容（抜粋）:
+${excerpt}
+
+要件:
+- 1500〜2000文字
+- マークダウン形式（見出しは##）
+- 構成:
+  1. 導入（問題提起・共感、200字）
+  2. この記事で分かること（箇条書き3点）
+  3. 背景・現状説明（400字）— 問題の本質に迫るが答えは出さない
+  4. 試してみた / 調べてみた（400字）— 体験談や発見を語る
+  5. 「でも、最も重要なポイントは…」と書いて「→ 続きは元記事で: {BLOG_URL}」として止める
+  6. まとめ（200字）— 読んでよかったと思わせる締め
+- 読み物として単体でも価値があるが、ブログを読みに行きたくなる構成
+- 元記事タイトルを引用しつつnote独自の切り口で書く
+- 「はい、承知いたしました」「以下に作成します」等の前置き・挨拶は一切不要。記事本文のみを出力する`,
+  };
+
+  return prompts[platform];
+}
+
+function platformName(p) {
+  return { x: 'X (Twitter)', fb: 'Facebook', note: 'note', image: 'アイキャッチ' }[p] || p;
+}
+
+// ==================== COPY ====================
+async function copyContent(platform) {
+  const text = document.getElementById(platform + '-content').value;
+  if (!text) { toast('コピーする内容がありません', 'error'); return; }
+  try {
+    await navigator.clipboard.writeText(text);
+    const btn = document.getElementById('copy-' + platform);
+    btn.classList.add('copied');
+    btn.textContent = '✅ コピー完了';
+    setTimeout(() => {
+      btn.classList.remove('copied');
+      btn.textContent = '📋 コピー';
+    }, 2000);
+    toast(platformName(platform) + ' の投稿文をコピーしました', 'success');
+  } catch {
+    toast('コピーに失敗しました', 'error');
+  }
+}
+
+// generateImage: wrapper for standalone re-generation from card button
+async function generateImage() {
+  if (!getApiKey()) { toast('Gemini API Keyを設定してください', 'error'); showTab('tab-settings'); return; }
+  try {
+    await generateImageInternal();
+    toast('アイキャッチを再生成しました', 'success');
+  } catch (err) {
+    toast('画像生成に失敗: ' + err.message, 'error');
+  }
+}
+
+function downloadImage() {
+  if (!state.generatedImage) { toast('画像がありません', 'error'); return; }
+  const a = document.createElement('a');
+  a.href = state.generatedImage;
+  const safeTitle = (state.blogTitle || 'eyecatch').replace(/[^a-zA-Z0-9ぁ-んァ-ン一-龥]/g, '_').slice(0, 30);
+  a.download = `eyecatch_${safeTitle}.jpg`;
+  a.click();
+  toast('画像をダウンロードしました', 'success');
+}
+
+function downloadPlatformImage(platform) {
+  const dataUrl = state.platformImages[platform];
+  if (!dataUrl) { toast('画像がありません', 'error'); return; }
+  const a = document.createElement('a');
+  a.href = dataUrl;
+  const safeTitle = (state.blogTitle || 'eyecatch').replace(/[^a-zA-Z0-9ぁ-んァ-ン一-龥]/g, '_').slice(0, 30);
+  a.download = `eyecatch_${platform}_${safeTitle}.jpg`;
+  a.click();
+  toast('画像をダウンロードしました', 'success');
+}
+
+// ==================== FINISH ====================
+async function finishWork() {
+  const parts = [];
+  parts.push(`📡 SNS投稿コンテンツ — ${state.blogTitle || 'ブログ記事'}`);
+  parts.push('='.repeat(40));
+
+  if (state.generated.x) {
+    parts.push('\n【𝕏 Twitter投稿】');
+    parts.push(state.generated.x);
+  }
+  if (state.generated.fb) {
+    parts.push('\n【Facebook投稿】');
+    parts.push(state.generated.fb);
+  }
+  if (state.generated.note) {
+    parts.push('\n【note記事】');
+    parts.push(state.generated.note);
+  }
+
+  const text = parts.join('\n');
+  try {
+    await navigator.clipboard.writeText(text);
+    toast('すべての投稿文をクリップボードにコピーしました！', 'success');
+  } catch {
+    toast('コピーに失敗しました', 'error');
+  }
+}
+
+// ==================== TOAST ====================
+function toast(message, type = 'info') {
+  const container = document.getElementById('toast-container');
+  const el = document.createElement('div');
+  el.className = `toast toast-${type}`;
+  const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+  el.innerHTML = `<span>${icons[type] || 'ℹ️'}</span><span>${message}</span>`;
+  container.appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+// ==================== INIT ====================
+// ==================== AUTO-PUBLISH ====================
+const BRIDGE = 'http://localhost:3004';
+
+async function checkBridgeServer() {
+  try {
+    const res = await fetch(`${BRIDGE}/health`, { signal: AbortSignal.timeout(3000) });
+    if (res.ok) toast('bridge-server に接続できました ✅', 'success');
+    else throw new Error('response ' + res.status);
+  } catch {
+    toast('bridge-server に接続できません。起動してください。', 'error');
+  }
+}
+
+async function publishPlatform(platform) {
+  const text = document.getElementById(platform + '-content').value;
+  if (!text) { toast('先に投稿文を生成してください', 'error'); return; }
+
+  const btn = document.getElementById('post-btn-' + platform);
+  const origText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '投稿中...';
+
+  try {
+    // 画像取得（そのプラットフォーム用）
+    const imageData = state.platformImages?.[platform] || state.generatedImage;
+    const imageBase64 = imageData ? imageData.split(',')[1] : null;
+    const imageMime   = imageData ? imageData.split(';')[0].split(':')[1] : null;
+
+    let endpoint, body;
+
+    if (platform === 'x') {
+      endpoint = '/publish-x';
+      body = {
+        text,
+        imageBase64,
+        imageMime,
+        credentials: {
+          apiKey:            getSetting('x-api-key'),
+          apiSecret:         getSetting('x-api-secret'),
+          accessToken:       getSetting('x-access-token'),
+          accessTokenSecret: getSetting('x-access-secret'),
+        },
+      };
+      if (!body.credentials.apiKey) { toast('X API Keyを設定タブで登録してください', 'error'); return; }
+    } else if (platform === 'fb') {
+      endpoint = '/publish-facebook';
+      body = {
+        text,
+        imageBase64,
+        imageMime,
+        pageId:      getSetting('fb-page-id'),
+        accessToken: getSetting('fb-access-token'),
+      };
+      if (!body.pageId || !body.accessToken) { toast('Facebook Page ID・Access Tokenを設定タブで登録してください', 'error'); return; }
+    } else if (platform === 'note') {
+      endpoint = '/publish-note';
+      const noteTitle = document.getElementById('note-title-input')?.value.trim() || state.blogTitle || document.getElementById('note-content').value.split('\n')[0].replace(/^#+ /, '').trim();
+      body = {
+        title: noteTitle,
+        content: text,
+        eyecatchBase64: imageBase64,
+        eyecatchMime:   imageMime,
+        credentials: {
+          email:    getSetting('note-email'),
+          password: getSetting('note-password'),
+        },
+      };
+      if (!body.credentials.email) { toast('noteのメール・パスワードを設定タブで登録してください', 'error'); return; }
+    }
+
+    const res = await fetch(`${BRIDGE}${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(120000),
+    });
+    const result = await res.json();
+    if (!result.ok) throw new Error(result.error || '投稿失敗');
+
+    setGenStatus(platform, 'done', '✓ 投稿済');
+    toast(`${platformName(platform)} に投稿しました！`, 'success');
+    if (result.url) {
+      btn.textContent = '✅ 投稿済';
+      btn.onclick = () => window.open(result.url, '_blank');
+    }
+  } catch (err) {
+    toast(`投稿失敗: ${err.message}`, 'error');
+    btn.disabled = false;
+    btn.textContent = origText;
+  }
+}
+
+// ==================== BOOKMARKLET ====================
+function buildBookmarkletHref() {
+  // データをURLハッシュに乗せて渡す → localStorage不要・クロスオリジン問題なし
+  const code = `(function(){
+    ['script','style','nav','header','footer','aside'].forEach(function(s){
+      try{document.querySelectorAll(s).forEach(function(e){e.remove()});}catch(e){}
+    });
+    var og=document.querySelector('meta[property="og:title"]');
+    var title=((og&&og.getAttribute('content'))||(document.querySelector('h1')||{}).innerText||document.title||'').trim();
+    var el=document.querySelector('article')||document.querySelector('[class*="entry-content"]')||document.querySelector('[class*="post-content"]')||document.querySelector('main')||document.body;
+    var content=((el&&el.innerText)||'').replace(/\\s+/g,' ').trim().slice(0,5000);
+    try{
+      var json=JSON.stringify({t:title,u:location.href,c:content});
+      var encoded=btoa(unescape(encodeURIComponent(json)));
+      window.open('https://blog-to-sns.vercel.app#bm:'+encoded,'_blank');
+    }catch(e){alert('取得失敗: '+e.message);}
+  })();`;
+  return 'javascript:' + code.replace(/\n\s*/g, '');
+}
+
+function checkBookmarkletData() {
+  const hash = location.hash;
+  if (hash.startsWith('#bm:')) {
+    try {
+      const encoded = hash.slice(4);
+      const data = JSON.parse(decodeURIComponent(escape(atob(encoded))));
+      // URLをきれいにする
+      history.replaceState(null, '', location.pathname + location.search);
+      setBlogData(data.t, data.u, data.c);
+      document.getElementById('bookmarklet-received').style.display = 'block';
+      toast(`「${data.t}」を取得しました`, 'success');
+    } catch (e) {
+      toast('データの読み込みに失敗しました: ' + e.message, 'error');
+    }
+  }
+}
+
+// ==================== INIT ====================
+document.addEventListener('DOMContentLoaded', () => {
+  loadSettings();
+  applyPlatformVisibility();
+
+  // Set bookmarklet href dynamically
+  const bmLink = document.getElementById('bookmarklet-link');
+  if (bmLink) bmLink.href = buildBookmarkletHref();
+
+  // ハッシュにブックマークレットデータがあれば読み込む
+  if (location.hash.startsWith('#bm:')) {
+    checkBookmarkletData();
+  }
+
+  // Tone chips
+  document.querySelectorAll('#tone-chips .tone-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('#tone-chips .tone-chip').forEach(c => c.classList.remove('selected'));
+      chip.classList.add('selected');
+      state.selectedTone = chip.dataset.tone;
+    });
+  });
+
+  // Image style chips
+  document.querySelectorAll('[data-style]').forEach(chip => {
+    chip.addEventListener('click', () => {
+      chip.closest('.tone-chips').querySelectorAll('.tone-chip').forEach(c => c.classList.remove('selected'));
+      chip.classList.add('selected');
+      state.selectedImageStyle = chip.dataset.style;
+    });
+  });
+
+  // Toggle listeners
+  TOGGLE_KEYS.forEach(k => {
+    const el = document.getElementById('s-' + k);
+    if (el) el.addEventListener('change', () => updateToggleText(k, el.checked));
+  });
+
+  if (!getApiKey()) {
+    setTimeout(() => toast('設定タブでGemini API Keyを登録してください', 'info'), 800);
+  }
+});
+</script>
+</body>
+</html>
