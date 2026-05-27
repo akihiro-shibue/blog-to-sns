@@ -938,7 +938,7 @@
               <button id="card-img-dl-x" class="btn btn-outline btn-sm" style="display:none"
                 onclick="downloadPlatformImage('x')">⬇️ 画像DL</button>
               <button class="btn btn-outline btn-sm" onclick="copyContent('x')" id="copy-x">📋 コピー</button>
-              <button class="btn btn-success btn-sm" onclick="publishPlatform('x')" id="post-btn-x">🚀 X投稿</button>
+              <button class="btn btn-success btn-sm" onclick="openXIntent()" id="post-btn-x">📝 X投稿画面を開く</button>
             </div>
           </div>
         </div>
@@ -975,7 +975,7 @@
               <button id="card-img-dl-fb" class="btn btn-outline btn-sm" style="display:none"
                 onclick="downloadPlatformImage('fb')">⬇️ 画像DL</button>
               <button class="btn btn-outline btn-sm" onclick="copyContent('fb')" id="copy-fb">📋 コピー</button>
-              <button class="btn btn-success btn-sm" onclick="publishPlatform('fb')" id="post-btn-fb">🚀 FB投稿</button>
+              <button class="btn btn-success btn-sm" onclick="publishPlatform('fb')" id="post-btn-fb">📝 FB下書き保存</button>
             </div>
           </div>
         </div>
@@ -1016,7 +1016,7 @@
               <button id="card-img-dl-note" class="btn btn-outline btn-sm" style="display:none"
                 onclick="downloadPlatformImage('note')">⬇️ 画像DL</button>
               <button class="btn btn-outline btn-sm" onclick="copyContent('note')" id="copy-note">📋 コピー</button>
-              <button class="btn btn-success btn-sm" onclick="publishPlatform('note')" id="post-btn-note">🚀 note投稿</button>
+              <button class="btn btn-success btn-sm" onclick="publishPlatform('note')" id="post-btn-note">📝 note下書き保存</button>
             </div>
           </div>
         </div>
@@ -2077,6 +2077,14 @@ async function checkBridgeServer() {
   }
 }
 
+function openXIntent() {
+  const text = document.getElementById('x-content')?.value;
+  if (!text) { toast('先に投稿文を生成してください', 'error'); return; }
+  const url = 'https://x.com/intent/tweet?text=' + encodeURIComponent(text);
+  window.open(url, '_blank');
+  toast('X の投稿画面を開きました。内容を確認して投稿してください', 'success');
+}
+
 async function publishPlatform(platform) {
   const text = document.getElementById(platform + '-content').value;
   if (!text) { toast('先に投稿文を生成してください', 'error'); return; }
@@ -2094,21 +2102,7 @@ async function publishPlatform(platform) {
 
     let endpoint, body;
 
-    if (platform === 'x') {
-      endpoint = '/publish-x';
-      body = {
-        text,
-        imageBase64,
-        imageMime,
-        credentials: {
-          apiKey:            getSetting('x-api-key'),
-          apiSecret:         getSetting('x-api-secret'),
-          accessToken:       getSetting('x-access-token'),
-          accessTokenSecret: getSetting('x-access-secret'),
-        },
-      };
-      if (!body.credentials.apiKey) { toast('X API Keyを設定タブで登録してください', 'error'); return; }
-    } else if (platform === 'fb') {
+    if (platform === 'fb') {
       endpoint = '/publish-facebook';
       body = {
         text,
@@ -2143,10 +2137,10 @@ async function publishPlatform(platform) {
     const result = await res.json();
     if (!result.ok) throw new Error(result.error || '投稿失敗');
 
-    setGenStatus(platform, 'done', '✓ 投稿済');
-    toast(`${platformName(platform)} に投稿しました！`, 'success');
+    setGenStatus(platform, 'done', '✓ 下書き保存済');
+    toast(`${platformName(platform)} に下書き保存しました！`, 'success');
     if (result.url) {
-      btn.textContent = '✅ 投稿済';
+      btn.textContent = '✅ 下書き保存済';
       btn.onclick = () => window.open(result.url, '_blank');
     }
   } catch (err) {

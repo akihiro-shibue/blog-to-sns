@@ -3,9 +3,10 @@
  * Port: 3004
  * Endpoints:
  *   GET  /health
- *   POST /publish-x         { text, imageBase64?, imageMime?, credentials:{apiKey,apiSecret,accessToken,accessTokenSecret} }
- *   POST /publish-facebook  { text, imageBase64?, imageMime?, pageId, accessToken }
- *   POST /publish-note      { title, content, credentials:{email,password} }
+ *   POST /publish-facebook  { text, imageBase64?, imageMime?, pageId, accessToken }  → 下書き保存
+ *   POST /publish-note      { title, content, credentials:{email,password} }          → 下書き保存
+ *
+ * ※ X への投稿は x.com/intent/tweet でブラウザから行う（API不使用）
  */
 
 import http from 'http';
@@ -154,6 +155,7 @@ async function publishToFacebook({ text, imageBase64, imageMime, pageId, accessT
       imgBuffer,
       Buffer.from(`\r\n--${boundary}\r\nContent-Disposition: form-data; name="caption"\r\n\r\n${text}\r\n`),
       Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="access_token"\r\n\r\n${accessToken}\r\n`),
+      Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="published"\r\n\r\nfalse\r\n`),
       Buffer.from(`--${boundary}--\r\n`),
     ];
     const body = Buffer.concat(bodyParts.map(p => Buffer.isBuffer(p) ? p : Buffer.from(p)));
@@ -175,7 +177,7 @@ async function publishToFacebook({ text, imageBase64, imageMime, pageId, accessT
     return { postId: data.post_id || data.id };
   } else {
     // Text only
-    const bodyStr = new URLSearchParams({ message: text, access_token: accessToken }).toString();
+    const bodyStr = new URLSearchParams({ message: text, access_token: accessToken, published: 'false' }).toString();
     const result = await httpsRequest({
       method: 'POST',
       hostname: 'graph.facebook.com',
@@ -274,28 +276,13 @@ async function publishToNote({ title, content, eyecatchBase64, eyecatchMime, cre
       }
     }
 
-    // 下書き保存
+    // 下書き保存のみ（公開しない）
     const draftBtn = page.locator('button:has-text("下書き保存"), [data-testid="draft-save"]').first();
-    if (await draftBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await draftBtn.click();
-      await page.waitForTimeout(2000);
-      console.log('note: 下書き保存完了');
-    }
-
-    // 公開
-    const publishBtn = page.locator('button:has-text("公開"), [data-testid="publish"]').first();
-    await publishBtn.waitFor({ state: 'visible', timeout: 10000 });
-    await publishBtn.click();
-    await page.waitForTimeout(1000);
-
-    const confirmBtn = page.locator('button:has-text("公開する")').first();
-    if (await confirmBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await confirmBtn.click();
-    }
-
-    await page.waitForTimeout(3000);
+    await draftBtn.waitFor({ state: 'visible', timeout: 10000 });
+    await draftBtn.click();
+    await page.waitForTimeout(2000);
     const url = page.url();
-    console.log('note: 公開完了', url);
+    console.log('note: 下書き保存完了', url);
     return { url };
   } finally {
     await browser.close();
