@@ -742,8 +742,8 @@
         </div>
       </div>
 
-      <!-- ★ BOOKMARKLET (primary) -->
-      <div class="card" style="border-color:#c7d2fe;background:linear-gradient(135deg,#fafbff,#f0f4ff)">
+      <!-- ★ BOOKMARKLET (disabled) -->
+      <div class="card" style="display:none">
         <div class="card-header" style="margin-bottom:0">
           <span style="font-size:22px">🔖</span>
           <div>
@@ -787,8 +787,8 @@
         </div>
       </div>
 
-      <!-- URL fetch (fallback) -->
-      <div class="card">
+      <!-- URL fetch (disabled) -->
+      <div class="card" style="display:none">
         <div class="card-header">
           <span style="font-size:20px">🔗</span>
           <div>
@@ -1592,8 +1592,6 @@ function setBlogData(title, url, content) {
   // Show proceed button
   document.getElementById('btn-to-generate').style.display = 'flex';
 
-  // Auto-fill image prompt
-  autoFillImagePrompt();
 }
 
 function proceedToGenerate() {
