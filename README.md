@@ -15,7 +15,7 @@
 ## クイックスタート
 
 ```bash
-git clone https://github.com/akihiroshibue/blog-to-sns.git
+git clone https://github.com/akihiro-shibue/blog-to-sns.git
 cd blog-to-sns
 npm install
 npx playwright install chromium
