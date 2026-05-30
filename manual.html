@@ -243,15 +243,29 @@
 <header>
   <div class="label">Setup Manual</div>
   <h1>blog-to-sns セットアップマニュアル</h1>
-  <p>ブログURLを貼るだけで X・Facebook・note に投稿できる環境を作る</p>
+  <p>ブログURLを貼るだけで X・Facebook・note 用の投稿文が自動で作れるツール</p>
   <div class="badges">
-    <span class="badge">所要時間：約30分</span>
-    <span class="badge">必要スキル：ターミナルの基本操作</span>
-    <span class="badge">費用：Gemini APIのみ（実質無料）</span>
+    <span class="badge">✅ ブラウザだけで使える</span>
+    <span class="badge">✅ 費用：実質無料</span>
+    <span class="badge">✅ セットアップ5〜10分</span>
   </div>
 </header>
 
 <div class="container">
+
+  <!-- かんたん版（ブラウザのみ） -->
+  <div style="background: linear-gradient(135deg, #e0f7fa 0%, #e8f5e9 100%); border-radius: 16px; padding: 32px; margin-bottom: 40px; border: 2px solid #11998e;">
+    <div style="font-size:12px; font-weight:700; letter-spacing:2px; color:#11998e; margin-bottom:12px;">QUICK START — 一番かんたんな使い方</div>
+    <h2 style="font-size:20px; margin-bottom:12px;">ブラウザで今すぐ使う（インストール不要）</h2>
+    <p style="font-size:14px; color:#444; margin-bottom:20px;">下のURLをブラウザで開くだけで使えます。Node.js・ターミナル・インストール作業は一切不要です。</p>
+    <div style="background:white; border-radius:10px; padding:16px 20px; font-size:16px; font-weight:700; color:#11998e; margin-bottom:16px; word-break:break-all;">
+      🔗 https://blog-to-sns.vercel.app
+    </div>
+    <div style="background:#fff8e1; border-left:3px solid #f59e0b; border-radius:8px; padding:12px 16px; font-size:13px; color:#555;">
+      ⚠️ 使い始めるには <strong>Google Gemini APIキー</strong>（無料）が必要です。<br>
+      取得方法は下の「<strong>Gemini APIキーの取得方法（詳細）</strong>」を参照してください。所要時間：約3分。
+    </div>
+  </div>
 
   <!-- 概要 -->
   <div class="overview">
@@ -349,27 +363,92 @@
     </div>
   </div>
 
-  <!-- APIキー取得 -->
+  <!-- Gemini APIキー取得（詳細） -->
   <div style="margin-bottom: 40px;">
-    <div class="section-title">API Key Setup</div>
-    <p style="font-size:14px; color:#555; margin-bottom:20px;">設定タブで入力するキーの取得方法です。Gemini APIキーだけあれば投稿文生成はできます。</p>
-    <div class="api-grid">
+    <div class="section-title">Gemini APIキーの取得方法（詳細）</div>
+    <p style="font-size:14px; color:#555; margin-bottom:20px;">
+      Googleアカウントがあれば<strong>無料</strong>で取得できます。所要時間：約3分。クレジットカード不要です。
+    </p>
 
-      <div class="api-card gemini">
-        <span class="platform">Gemini</span>
-        <h3>Gemini API キー <span class="required">必須</span></h3>
-        <ol>
-          <li><a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a> を開く</li>
-          <li>Googleアカウントでログイン</li>
-          <li>「Create API key」をクリック</li>
-          <li>生成されたキーをコピー</li>
-        </ol>
-        <div class="tip-box" style="margin-top:10px; font-size:12px;">無料枠で月数百回は使えます</div>
+    <div class="step-block">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h3>Google AI Studio を開く</h3>
+        <p>以下のURLをブラウザで開いてください。</p>
+        <div class="tip-box">
+          <a href="https://aistudio.google.com/app/apikey" target="_blank">https://aistudio.google.com/app/apikey</a>
+        </div>
+        <p>Googleアカウントのログイン画面が表示された場合は、普段使っているGoogleアカウントでログインしてください。</p>
       </div>
+    </div>
+
+    <div class="step-block">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h3>「Create API key」をクリック</h3>
+        <p>ページ中央または左上に <strong>「Create API key」</strong>（APIキーを作成）という青いボタンが表示されます。それをクリックしてください。</p>
+        <div class="note-box">
+          初めてGoogle AI Studioを使う場合、利用規約への同意画面が出ることがあります。内容を確認して「同意する」をクリックしてください。
+        </div>
+      </div>
+    </div>
+
+    <div class="step-block">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h3>プロジェクトを選ぶ</h3>
+        <p>「Create API key in new project」（新しいプロジェクトでAPIキーを作成）を選んでクリックしてください。</p>
+        <div class="tip-box">
+          すでにGoogleのプロジェクトがある方は、既存のプロジェクトを選んでもOKです。どちらでも問題ありません。
+        </div>
+      </div>
+    </div>
+
+    <div class="step-block">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <h3>APIキーをコピーする</h3>
+        <p>「AIza...」で始まる長い文字列がAPIキーです。右側のコピーアイコン（📋）をクリックするか、文字列を全選択してコピーしてください。</p>
+        <div class="note-box">
+          ⚠️ このキーは他人に見せないでください。パスワードと同じように扱ってください。
+        </div>
+        <div class="tip-box">
+          コピーしたらメモ帳などに一時的に貼り付けておくと安心です。
+        </div>
+      </div>
+    </div>
+
+    <div class="step-block">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <h3>アプリの設定タブに貼り付ける</h3>
+        <p><a href="https://blog-to-sns.vercel.app" target="_blank">blog-to-sns</a> を開き、左メニューの <strong>「⚙️ 設定」</strong> タブをクリックします。</p>
+        <p>「Google Gemini API Key」の入力欄に、コピーしたAPIキーを貼り付けて <strong>「保存」</strong> ボタンを押してください。</p>
+        <div class="tip-box">
+          ✅ これで設定完了です！あとは記事取得タブでブログのURLを入力するだけで投稿文が生成されます。
+        </div>
+      </div>
+    </div>
+
+    <div style="background:#f0fdf4; border-radius:12px; padding:20px 24px; margin-top:8px;">
+      <div style="font-weight:700; font-size:14px; margin-bottom:10px; color:#166534;">💡 よくある質問：費用はかかりますか？</div>
+      <p style="font-size:13px; color:#444; line-height:1.9;">
+        Gemini APIは<strong>無料枠</strong>があり、1日に数十〜数百回の生成は無料で使えます。<br>
+        個人利用・SNS投稿の生成であれば、無料枠を超えることはほぼありません。<br>
+        クレジットカードの登録も不要です。
+      </p>
+    </div>
+  </div>
+
+  <!-- その他APIキー取得（オプション） -->
+  <div style="margin-bottom: 40px;">
+    <div class="section-title">その他のAPIキー（自動投稿したい方向け・任意）</div>
+    <p style="font-size:14px; color:#555; margin-bottom:20px;">投稿文のコピー&amp;ペーストだけなら不要です。ワンクリックで自動投稿したい方のみ設定してください。</p>
+    <div class="api-grid">
 
       <div class="api-card x">
         <span class="platform">X (Twitter)</span>
-        <h3>X API キー <span class="optional">自動投稿時のみ</span></h3>
+        <h3>X API キー <span class="optional">任意</span></h3>
         <ol>
           <li><a href="https://developer.twitter.com/" target="_blank">X Developer Portal</a> を開く</li>
           <li>アプリを作成（Basic プランで可）</li>
@@ -379,7 +458,7 @@
 
       <div class="api-card facebook">
         <span class="platform">Facebook</span>
-        <h3>Facebook アクセストークン <span class="optional">自動投稿時のみ</span></h3>
+        <h3>Facebook アクセストークン <span class="optional">任意</span></h3>
         <ol>
           <li><a href="https://developers.facebook.com/" target="_blank">Meta for Developers</a> を開く</li>
           <li>アプリを作成</li>
@@ -390,12 +469,12 @@
 
       <div class="api-card note">
         <span class="platform">note</span>
-        <h3>noteアカウント情報 <span class="optional">自動投稿時のみ</span></h3>
+        <h3>noteアカウント情報 <span class="optional">任意</span></h3>
         <ol>
           <li>noteのメールアドレスとパスワードをそのまま設定タブに入力</li>
           <li>Playwrightが自動でログインして下書き保存します</li>
         </ol>
-        <div class="note-box" style="margin-top:10px; font-size:12px;">パスワードはlocalStorageに保存されます（外部送信なし）</div>
+        <div class="note-box" style="margin-top:10px; font-size:12px;">パスワードはお使いのブラウザ内（localStorage）に保存されます。外部には一切送信されません。</div>
       </div>
 
     </div>
@@ -467,7 +546,7 @@
 </div>
 
 <footer>
-  作者：渋江昭弘 ｜
+  作者：渋江彰寛 ｜
   <a href="https://x.com/akihiroshibue" target="_blank">X</a> ｜
   <a href="https://github.com/akihiro-shibue/blog-to-sns" target="_blank">GitHub</a>
   <br><br>
